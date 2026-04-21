@@ -10,7 +10,6 @@ services:
       - /tmp/stravai:/config
       - ./assets:/assets
     environment:
-      - LOGGING=debug
       - STRAVA_CLIENT_ID="${STRAVA_CLIENT_ID:-}"
       - STRAVA_CLIENT_SECRET="${STRAVA_CLIENT_SECRET:-}"
       - OLLAMA_URL="${OLLAMA_URL:-}"
