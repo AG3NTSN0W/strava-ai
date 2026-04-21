@@ -1,0 +1,131 @@
+{% for activity in activities %}
+<div class="activity"
+     hx-ext="json-enc"
+     hx-put="/generate"
+     hx-trigger="click"
+     hx-indicator="#loading-container"
+     hx-target="#activity-data"
+     hx-vals='js:{"activity_id": {{activity.id}}, "athlete_id": {{athlete.athlete_id}}, prompt: document.getElementById("ai-prompt").value}'
+     hx-on:htmx:before-request="before_request()"
+     id="activity-{{athlete.athlete_id}}-{{activity.id}}">
+    <div class="activity-summary" id="summary">
+        <div class="activity-header">
+            <h1>
+                {{ activity.name }}
+            </h1>
+            <h2 class="activity-description">
+                {{ activity.description }}
+            </h2>
+        </div>
+        <div class="activity-content">
+
+        </div>
+    </div>
+    <div class="footer">
+        <div class="activity-stats">
+            <div class="stat stats-sm">
+                <div class="stat-subtext">
+                    <i class="bi bi-clock"></i>
+                </div>
+                <div class="stat-text">{{activity.elapsed_time}}</div>
+            </div>
+            <div class="stat stats-sm">
+                <div class="stat-subtext">
+                    <i class="bi bi-geo-alt-fill text-danger"></i>
+                </div>
+                <div class="stat-text">
+                    {{activity.distance}} km
+                </div>
+            </div>
+
+            {% match activity.average_heartrate %}
+            {% when Some(data) %}
+            <div class="stat stats-sm">
+                <div class="stat-subtext">
+                    <i class="bi bi-heart-pulse"></i>
+                </div>
+                <div class="stat-text">
+                    {{ "{:.0}"|format(data) }} bpm
+                </div>
+            </div>
+            {% when None %}
+            {% endmatch %}
+
+            {% match activity.pr_count %}
+            {% when Some(data) %}
+            <div class="stat stats-sm">
+                <div class="stat-subtext">
+                    <i class="bi bi-trophy"></i>
+                </div>
+                <div class="stat-text">
+                    {{ data }}
+                </div>
+            </div>
+            {% when None %}
+            {% endmatch %}
+        </div>
+        <div class="activity-date">
+            {{activity.start_date_local}}
+        </div>
+    </div>
+
+</div>
+{% endfor %}
+
+<div hx-swap-oob="true" id="athlete-settings-form">
+    <form id="settingsForm">
+        <input type="hidden" value="{{athlete.athlete_id}}" name="athlete_id">
+        <div class="settings-field">
+            <div class="settings-field-label">Auto update:</div>
+            <div class="toggle settings-field-input">
+                <input form="settingsForm" type="checkbox" value="true" name="auto_update"
+                       {% if athlete.auto_update %} checked {% endif %}/>
+                <label></label>
+            </div>
+        </div>
+        <div class="settings-prompt-field">
+            <div class="settings-prompt settings-field-label">Prompt</div>
+            <div class="settings-textarea settings-field-input">
+                <textarea id="ai-prompt" name="prompt">{{athlete.prompt}}</textarea>
+            </div>
+        </div>
+    </form>
+
+    <button class="settings-submit" hx-post="/update/settings" hx-trigger="click"
+            hx-include="#settingsForm">
+        Update
+    </button>
+</div>
+
+<div id="selected-athletes" hx-swap-oob="true" class="athletes-header">
+    <label class="athletes-name"> {{athlete.athlete_name}} </label>
+</div>
+
+
+<div id="ai-generator" hx-swap-oob="true" class="ai-container">
+    <div id="loading-container" class="htmx-indicator">
+        <svg class="loading-indicator" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 150">
+            <path fill="none" stroke="#dbeafe" stroke-width="15" stroke-linecap="round"
+                  stroke-dasharray="300 385"
+                  stroke-dashoffset="0"
+                  d="M275 75c0 31-27 50-50 50-58 0-92-100-150-100-28 0-50 22-50 50s23 50 50 50c58 0 92-100 150-100 24 0 50 19 50 50Z">
+                <animate attributeName="stroke-dashoffset" calcMode="spline" dur="2"
+                         values="685;-685"
+                         keySplines="0 0 1 1" repeatCount="indefinite"></animate>
+            </path>
+        </svg>
+    </div>
+
+    <div id="activity-data">
+        <div class="activity-summary">
+            <div class="activity-header empty">
+                <h1>
+                    Select an Activity
+                </h1>
+                <h2 class="activity-description">
+                    To generate a Name and description
+                </h2>
+            </div>
+        </div>
+    </div>
+</div>

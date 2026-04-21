@@ -1,0 +1,95 @@
+{% match activity %}
+{% when Some(data) %}
+<div id="ai-summary">
+    <div class="activity-summary" id="summary">
+        <div class="activity-header">
+            <h1>
+                {{ data.name }}
+            </h1>
+            <h2 class="activity-description">
+                {{ data.description }}
+            </h2>
+        </div>
+    </div>
+    <div class="footer">
+        <div class="activity-stats">
+            <div class="stat stats-sm">
+                <div class="stat-subtext">
+                    <i class="bi bi-clock"></i>
+                </div>
+                <div class="stat-text">{{data.elapsed_time}}</div>
+            </div>
+            <div class="stat stats-sm">
+                <div class="stat-subtext">
+                    <i class="bi bi-geo-alt-fill text-danger"></i>
+                </div>
+                <div class="stat-text">
+                    {{data.distance}} km
+                </div>
+            </div>
+
+            {% match data.average_heartrate %}
+            {% when Some(data) %}
+            <div class="stat stats-sm">
+                <div class="stat-subtext">
+                    <i class="bi bi-heart-pulse"></i>
+                </div>
+                <div class="stat-text">
+                    {{ "{:.0}"|format(data) }} bpm
+                </div>
+            </div>
+            {% when None %}
+            {% endmatch %}
+
+            {% match data.pr_count %}
+            {% when Some(data) %}
+            <div class="stat stats-sm">
+                <div class="stat-subtext">
+                    <i class="bi bi-trophy"></i>
+                </div>
+                <div class="stat-text">
+                    {{ data }}
+                </div>
+            </div>
+            {% when None %}
+            {% endmatch %}
+        </div>
+    </div>
+    <div class="activity-date" style="text-align: center;">
+        {{data.start_date_local}}
+    </div>
+
+
+    <form id="activityForm" style="display: none">
+        <input type="text" name="athlete_id" value="{{ athlete_id }}">
+        <input type="text" name="activity_id" value="{{ activity_id }}">
+        <input type="text" name="description" value=" {{ data.description }}">
+        <input type="text" name="name" value=" {{ data.name }}">
+    </form>
+
+    <div class="gen-btn">
+        <button class="gen-button" hx-post="/update/activity" hx-trigger="click"
+                hx-include="#activityForm"
+                hx-indicator="#loading-container" hx-target="#activity-results"
+                hx-on:htmx:before-request="before_request_ai()">
+            Save
+        </button>
+        <button class="gen-button" onclick="reGen({{ athlete_id }}, {{ activity_id }})">
+            <i class="bi bi-arrow-clockwise"></i>
+        </button>
+    </div>
+</div>
+<div id="activity-results"></div>
+{% when None %}
+<div class="activity-summary error">
+    <div class="activity-header empty">
+        <h1>
+            Activity Error
+        </h1>
+        <h2 class="activity-description">
+            Unable to find activity
+        </h2>
+    </div>
+</div>
+{% endmatch %}
+

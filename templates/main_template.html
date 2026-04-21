@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css"/>
+    <script src="https://unpkg.com/htmx.org"></script>
+    <script src="https://unpkg.com/htmx.org/dist/ext/json-enc.js"></script>
+
+
+    <link href="/assets/style.css" rel="stylesheet"/>
+    <script>
+        const STRAVA_CLIENT_ID = '{{ strava_client_id }}';
+        const ATHLETES = {{ athletes | json | safe }};
+    </script>
+
+    <script src="/assets/script.js" defer></script>
+
+    <link rel="icon" href="/assets/strava-icon.svg" type="image/x-icon">
+    <title>StravAI</title>
+</head>
+
+<body>
+<div id="selected-athletes" class="athletes-header">
+    <label class="athletes-name"> </label>
+</div>
+<div class="header">
+    Strava AI
+</div>
+<div class="connection-container">
+    <button class="connection-btn" onclick="connectWithStrava()">
+        <img src="/assets/strava-icon-white.svg">
+        Connect with Strava
+    </button>
+</div>
+
+<div class="settings" id="settings-container">
+    <div class="settings-field">
+        <div class="settings-field-label">Theme:</div>
+        <div class="settings-field-input">
+            <select id="theme-selector" onchange="changeTheme(event)">
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+            </select>
+        </div>
+    </div>
+    <div id="athlete-settings-form">
+
+    </div>
+</div>
+
+
+<div class="activities-container">
+    {% if athletes.len() == 0 %}
+    <div class="no-activities">
+        <div>
+            No Athletes Found.
+        </div>
+        <div>
+            Please connect with Strava to view your activities.
+        </div>
+    </div>
+    {% else %}
+    <div class="activity-container">
+        <div id="loading-activity" class="htmx-indicator">
+            <svg class="loading-indicator" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 150">
+                <path fill="none" stroke="#dbeafe" stroke-width="15" stroke-linecap="round"
+                      stroke-dasharray="300 385"
+                      stroke-dashoffset="0"
+                      d="M275 75c0 31-27 50-50 50-58 0-92-100-150-100-28 0-50 22-50 50s23 50 50 50c58 0 92-100 150-100 24 0 50 19 50 50Z">
+                    <animate attributeName="stroke-dashoffset" calcMode="spline" dur="2"
+                             values="685;-685"
+                             keySplines="0 0 1 1" repeatCount="indefinite"></animate>
+                </path>
+            </svg>
+        </div>
+        <div id="activity-results">
+            {% for athlete in athletes %}
+            <div class="activity"
+                 id="athlete-{{ athlete.id }}"
+                 hx-get="/athlete?athlete_id={{athlete.id}}"
+                 hx-trigger="click"
+                 hx-target="#activity-results">
+                <div class="activity-summary" id="summary">
+                    <div class="activity-header">
+                        <h1>
+                            {{ athlete.firstname }} {{ athlete.lastname }}
+                        </h1>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+    </div>
+    {% endif %}
+</div>
+
+<div id="ai-generator" class="ai-container">
+
+</div>
+</body>
+
+</html>
