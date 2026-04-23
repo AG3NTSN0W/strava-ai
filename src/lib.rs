@@ -21,7 +21,7 @@ pub struct AppState {
 impl AppState {
     pub fn new(client_id: i32, client_secret: String, db_pools: Pool<Sqlite>) -> Arc<Self> {
         let cache = Cache::builder()
-            .time_to_live(Duration::from_secs(30 * 60)) // 30 min
+            .time_to_live(Duration::from_secs(5 * 60 * 60)) // 5 hours
             .build();
 
         Arc::new(Self {
