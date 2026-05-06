@@ -95,10 +95,9 @@ impl Polyline {
         merged
             .iter()
             .map(|&(lat, lng, count)| {
-                let norm = ((count as f64 / max_freq as f64) * 100.0)
-                    .ceil()
-                    .min(100.0)
-                    .max(1.0);
+                let norm = ((count as f64 / max_freq as f64) * 100.0).ceil();
+                let norm = norm.min(100.0);
+                let norm = norm.max(1.0);
                 let hue = 240.0 - (norm * 2.4);
                 vec![lat, lng, norm, hue]
             })
