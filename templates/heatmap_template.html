@@ -15,7 +15,7 @@
     const pts = {{ points_js| json |safe }};
     const group=L.featureGroup();
     pts.forEach(p=>{
-        L.circleMarker([p[0],p[1]],{radius:2,fillColor:'hsl('+p[3]+',100%,50%)',fillOpacity:0.8,stroke:false}).addTo(group);
+        L.circleMarker([p[0],p[1]],{radius:4,fillColor:'hsl('+p[3]+',100%,50%)',fillOpacity:1,stroke:false}).addTo(group);
     });
     group.addTo(map);
     map.fitBounds(group.getBounds(),{padding:[30,30]});
