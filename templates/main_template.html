@@ -34,6 +34,14 @@
         <img src="/assets/strava-icon-white.svg">
         Connect with Strava
     </button>
+
+    <button class="info_btn" onclick="toggle_info()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-info-circle"
+             viewBox="0 0 16 16">
+            <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
+            <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0"/>
+        </svg>
+    </button>
 </div>
 
 <div class="settings" id="settings-container">
@@ -101,6 +109,82 @@
 <div id="ai-generator" class="ai-container">
 
 </div>
+
+
+<div id="infoOverlay" class="info-overlay" style="display: none">
+    <div class="content">
+        <div style="position: relative; font-family: sans-serif;">
+
+            <div>
+                <div id="info_info" class="info_container info_info">
+                    Toggle Info
+                </div>
+
+                <!-- Connecting SVG -->
+                <svg style="position: absolute;top: 5px;right: 30px;pointer-events: none; width: 100px; height: 100px;">
+                    <defs>
+                        <!-- Define the arrowhead -->
+                        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="#CC4200"></polygon>
+                        </marker>
+                    </defs>
+
+                    <!--
+                      M = Move to (start)
+                      Q = Quadratic Bézier: (control point x y) (end point x y)
+                    -->
+                    <path d="M 30 100 Q 0 75 80 20" stroke="#CC4200" stroke-width="2" fill="transparent"
+                          marker-end="url(#arrowhead)"></path>
+                </svg>
+            </div>
+
+            <div>
+                <div id="info_strava" class="info_container info_strava">
+                    <h4> Strava Authentication </h4> <br>
+                    Connect your account to enable automated activity updates. You’ll be redirected to Strava to safely
+                    authorize Strava AI to edit your activities titles and descriptions .
+                </div>
+
+                <svg style="position: absolute;top: 5px;right: 250px;pointer-events: none; width: 250px; height: 125px;">
+                    <defs>
+                        <!-- Define the arrowhead -->
+                        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="#CC4200"></polygon>
+                        </marker>
+                    </defs>
+
+                    <path d="M 0 150 Q 150 125 250 35" stroke="#CC4200" stroke-width="2" fill="transparent"
+                          marker-end="url(#arrowhead)"></path>
+                </svg>
+            </div>
+
+            <div>
+                <div id="info_theme" class="info_container info_theme">
+                    Adjust the site's appearance to Light or Dark mode.
+                </div>
+
+                <svg style="position: absolute;top: 30px;left: 300px;pointer-events: none;width: 220px;height: 125px;">
+                    <defs>
+                        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="#CC4200"></polygon>
+                        </marker>
+                    </defs>
+
+                    <path d="M 215 40 Q 200 100 20 110" stroke="#CC4200" stroke-width="2" fill="transparent"
+                          marker-end="url(#arrowhead)"></path>
+                </svg>
+            </div>
+
+            <div id="info_activity_template"></div>
+
+            <div id="info_ai_template"></div>
+
+        </div>
+
+    </div>
+</div>
+
+
 </body>
 
 </html>

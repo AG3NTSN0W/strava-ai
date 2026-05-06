@@ -67,7 +67,7 @@
         <input type="text" name="name" value=" {{ data.name }}">
     </form>
 
-    <div class="gen-btn">
+    <div class="gen-btn" id="gen-btn">
         <button class="gen-button" hx-post="/update/activity" hx-trigger="click"
                 hx-include="#activityForm"
                 hx-indicator="#loading-container" hx-target="#activity-results"
@@ -92,4 +92,48 @@
     </div>
 </div>
 {% endmatch %}
+
+<div id="info_ai_template" hx-swap-oob="true">
+    <div style=" position: relative; top: 470px;">
+        <div>
+            <div id="info_activity_update" class="info_container info_activity_update">
+                Update strava activity with the AI generated name and description
+            </div>
+
+            <svg style="position: absolute;top: -190px;right: 200px;pointer-events: none;width: 350px;height: 200px;">
+                <defs>
+                    <!-- Define the arrowhead -->
+                    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#CC4200"></polygon>
+                    </marker>
+                </defs>
+
+                <path d="M 150 250 Q 100 80 265 15" stroke="#CC4200" stroke-width="2" fill="transparent"
+                      marker-end="url(#arrowhead)"></path>
+            </svg>
+        </div>
+
+        <div>
+            <div id="info_activity_regen" class="info_container info_activity_regen">
+                <span style="font-weight: 800"> Click to re-create name and description </span> <br>
+                <span> Will use prompt to generated name and description no need to 'save changes'. </span> <br>
+                <span> Remember to 'save changes' for the auto update of activities. </span>
+            </div>
+
+            <svg style="position: absolute;top: -190px;right: 0px;pointer-events: none;width: 350px;height: 200px;">
+                <defs>
+                    <!-- Define the arrowhead -->
+                    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#CC4200"></polygon>
+                    </marker>
+                </defs>
+
+                <path d="M 290 200 Q 300 50 195 15" stroke="#CC4200" stroke-width="2" fill="transparent"
+                      marker-end="url(#arrowhead)"></path>
+            </svg>
+        </div>
+
+    </div>
+</div>
+
 

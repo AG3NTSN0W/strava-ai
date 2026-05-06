@@ -14,6 +14,7 @@ pub mod callback_controller;
 pub mod main_template;
 mod ai_template;
 mod activity_template;
+mod heatmap_template;
 
 struct HtmlTemplate<T>(T);
 
@@ -46,5 +47,6 @@ pub fn routes(app_state: Arc<AppState>) -> Router {
         .route("/athlete", get(activity_template::get_template))
         .route("/update/activity", post(callback_controller::update_activity))
         .route("/update/settings", post(callback_controller::update_settings))
+        .route("/heat/map", get(heatmap_template::get_template))
         .with_state(app_state)
 }

@@ -11,13 +11,15 @@
     --shadow-large: 0 6px 16px var(--st-orange);
 
 
-
     --st-orange-gradient: #FC4C0245;
-
 
 
     --activity-border: 1px solid black;
 
+}
+
+.info_btn {
+    color: white;
 }
 
 /*.settings-textarea.settings-field-input > textarea {*/

@@ -82,6 +82,12 @@ async fn main() {
         error!("Failed to initialize database schema: {e}");
         return;
     }
+
+    if let Err(e) = sqlx::migrate!("./migrations").run(&db_pools).await {
+        error!("Failed to migration database: {e}");
+        return;
+    };
+
     let app_state = AppState::new(client_id, client_secret, db_pools);
 
     // Start the background scheduler

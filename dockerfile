@@ -15,6 +15,7 @@ RUN rm src/*.rs
 # copy your source tree
 COPY ./src ./src
 COPY ./templates ./templates
+COPY ./migrations ./migrations
 
 # build for release
 RUN rm ./target/release/deps/stravai_oxide*

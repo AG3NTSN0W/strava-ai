@@ -497,3 +497,109 @@ div#activity-data {
 .settings-submit {
     width: -webkit-fill-available;
 }
+
+/*/////////////////// OVERLAY*/
+.info_btn {
+    position: absolute;
+    right: 15px;
+    background-color: unset;
+    border: unset;
+    box-shadow: none;
+}
+
+.curved-connector {
+    width: 50px;
+    height: 50px;
+    border-bottom: 2px solid black;
+    border-left: 2px solid black;
+    border-bottom-left-radius: 20px; /* This creates the curve */
+}
+
+.info-overlay {
+    position: fixed; /* Stays in place even during scroll */
+    top: 0;
+    left: 0;
+    width: 100%;
+}
+
+.content {
+    text-align: center;
+}
+
+.info_container {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    padding: 10px;
+    box-shadow: var(--shadow-large);
+    border-radius: 1.5rem;
+    background-color: var(--primary-surface);
+    justify-content: center;
+    align-items: center;
+    z-index: 1;
+}
+
+.info_info {
+    top: 85px;
+    right: 30px;
+    width: 100px;
+    height: 25px;
+}
+
+.info_strava {
+    top: 120px;
+    right: 380px;
+    width: 250px;
+    height: 150px;
+}
+
+.info_strava>h4 {
+    margin: 0;
+}
+
+.info_theme {
+    left: 500px;
+    top: 20px;
+    width: 200px;
+    height: 50px;
+}
+
+.info_auto_update {
+    left: 500px;
+    top: 160px;
+    width: 200px;
+    height: 50px;
+}
+
+.info_prompt {
+    left: 500px;
+    top: 285px;
+    width: 200px;
+    height: 115px;
+}
+
+.info_save {
+    left: 125px;
+    top: 530px;
+    width: 155px;
+    height: 55px;
+}
+
+.info_activities {
+    top: 75vh;
+    right: 110px;
+    width: 225px;
+    height: 75px;
+}
+
+.info_activity_regen {
+    right: 25px;
+    width: 230px;
+    height: 190px;
+}
+
+.info_activity_update {
+    right: 330px;
+    width: 150px;
+    height: 110px;
+}

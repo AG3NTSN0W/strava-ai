@@ -107,6 +107,7 @@ async fn update_activities_table(
         elev_high: activity.elev_high,
         elev_low: activity.elev_low,
         pr_count: activity.pr_count,
+        summary_polyline: activity.map.summary_polyline.clone(),
     };
 
     ActivityRepository::create(&app_state.db_pools, &athlete_activity).await?;

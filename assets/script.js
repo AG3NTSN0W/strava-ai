@@ -75,6 +75,16 @@ const settings_request = () => {
     debugger
 }
 
+const toggle_info = () => {
+    const info_overlay_display = document.getElementById('infoOverlay').style.display
+    if (info_overlay_display === 'none') {
+        document.getElementById('infoOverlay').style.display = 'block'
+    } else {
+        document.getElementById('infoOverlay').style.display = 'none'
+    }
+}
+
+
 window.onload = () => {
     on_load();
     initializeTheme()
