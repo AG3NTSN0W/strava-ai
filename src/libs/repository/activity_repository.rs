@@ -11,8 +11,8 @@ impl ActivityRepository {
                 id, athlete_id, name, description, distance, moving_time, elapsed_time, total_elevation_gain,
                 activity_type, sport_type, start_date_local, achievement_count,
                 average_speed, max_speed, average_watts, kilojoules, average_heartrate,
-                max_heartrate, elev_high, elev_low, pr_count, summary_polyline
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (id) DO NOTHING;"
+                max_heartrate, elev_high, elev_low, pr_count
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (id) DO NOTHING;"
         )
         .bind(activity.id)
         .bind(activity.athlete_id)
@@ -35,7 +35,6 @@ impl ActivityRepository {
         .bind(activity.elev_high)
         .bind(activity.elev_low)
         .bind(activity.pr_count)
-        .bind(&activity.summary_polyline)
         .execute(pool)
         .await?;
         Ok(())
@@ -47,7 +46,7 @@ impl ActivityRepository {
             "SELECT id, athlete_id, name, description, distance, moving_time, elapsed_time, total_elevation_gain,
                     activity_type, sport_type, start_date_local, achievement_count,
                     average_speed, max_speed, average_watts, kilojoules, average_heartrate,
-                    max_heartrate, elev_high, elev_low, pr_count, summary_polyline FROM activity WHERE id = ?"
+                    max_heartrate, elev_high, elev_low, pr_count FROM activity WHERE id = ?"
         )
         .bind(id)
         .fetch_optional(pool)
@@ -60,7 +59,7 @@ impl ActivityRepository {
             "SELECT id, athlete_id, name, description, distance, moving_time, elapsed_time, total_elevation_gain,
                     activity_type, sport_type, start_date_local, achievement_count,
                     average_speed, max_speed, average_watts, kilojoules, average_heartrate,
-                    max_heartrate, elev_high, elev_low, pr_count, summary_polyline FROM activity"
+                    max_heartrate, elev_high, elev_low, pr_count FROM activity"
         )
         .fetch_all(pool)
         .await
@@ -75,7 +74,7 @@ impl ActivityRepository {
             "SELECT id, athlete_id, name, description, distance, moving_time, elapsed_time, total_elevation_gain,
                     activity_type, sport_type, start_date_local, achievement_count,
                     average_speed, max_speed, average_watts, kilojoules, average_heartrate,
-                    max_heartrate, elev_high, elev_low, pr_count, summary_polyline FROM activity WHERE athlete_id = ? ORDER BY start_date_local DESC"
+                    max_heartrate, elev_high, elev_low, pr_count FROM activity WHERE athlete_id = ? ORDER BY start_date_local DESC"
         )
         .bind(athlete_id)
         .fetch_all(pool)
@@ -90,7 +89,7 @@ impl ActivityRepository {
                 total_elevation_gain = ?, activity_type = ?, sport_type = ?,
                 start_date_local = ?, achievement_count = ?, average_speed = ?,
                 max_speed = ?, average_watts = ?, kilojoules = ?, average_heartrate = ?,
-                max_heartrate = ?, elev_high = ?, elev_low = ?, pr_count = ?, summary_polyline = ?
+                max_heartrate = ?, elev_high = ?, elev_low = ?, pr_count = ?
              WHERE id = ?",
         )
         .bind(&activity.name)
@@ -112,7 +111,6 @@ impl ActivityRepository {
         .bind(activity.elev_high)
         .bind(activity.elev_low)
         .bind(activity.pr_count)
-        .bind(&activity.summary_polyline)
         .bind(activity.id)
         .execute(pool)
         .await?;
@@ -195,5 +193,17 @@ impl ActivityRepository {
             .bind(id)
             .fetch_all(pool)
             .await
+    }
+
+    pub async fn get_sport_types_by_athlete(
+        pool: &Pool<Sqlite>,
+        athlete_id: i64,
+    ) -> Result<Vec<String>, Error> {
+        sqlx::query_scalar(
+            "SELECT DISTINCT sport_type FROM activity WHERE athlete_id = ? ORDER BY sport_type",
+        )
+        .bind(athlete_id)
+        .fetch_all(pool)
+        .await
     }
 }

@@ -1,9 +1,10 @@
 use crate::AppState;
 use crate::libs::models::AthleteActivity;
+use crate::libs::models::activity_stream::ActivityStream;
 use crate::libs::models::strava::activity::Activity;
 use crate::libs::models::strava::update_activity::UpdateActivity;
 use crate::libs::ollama_client::OllamaClient;
-use crate::libs::repository::{ActivityRepository, AthleteRepository};
+use crate::libs::repository::{ActivityRepository, ActivityStreamRepository, AthleteRepository};
 use crate::libs::strava_client::StravaClient;
 use log::{debug, info, warn};
 use std::env;
@@ -74,6 +75,7 @@ async fn add_activities_to_db(
     for activity in activities {
         let name = activity.name.to_string();
         update_activities_table(app_state, athlete_id, &activity, &name, "").await?;
+        fetch_and_save_streams(app_state, access_token, activity.id).await?;
     }
     Ok(())
 }
@@ -107,7 +109,6 @@ async fn update_activities_table(
         elev_high: activity.elev_high,
         elev_low: activity.elev_low,
         pr_count: activity.pr_count,
-        summary_polyline: activity.map.summary_polyline.clone(),
     };
 
     ActivityRepository::create(&app_state.db_pools, &athlete_activity).await?;
@@ -155,6 +156,36 @@ async fn generate_summaries(
         .await?;
 
         info!("Activity updated. athlete_id: {athlete_id}, Activity Id: {}", activity.id);
+
+        fetch_and_save_streams(app_state, access_token, activity.id).await?;
+    }
+
+    Ok(())
+}
+
+async fn fetch_and_save_streams(
+    app_state: &AppState,
+    access_token: &str,
+    activity_id: i64,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let existing = ActivityStreamRepository::get_by_activity_id(&app_state.db_pools, activity_id).await?;
+    if !existing.is_empty() {
+        return Ok(());
+    }
+
+    let streams = StravaClient::get_activity_streams(access_token, activity_id).await?;
+
+    for stream in streams {
+        let activity_stream = ActivityStream {
+            id: 0,
+            activity_id,
+            stream_type: stream.stream_type,
+            data: stream.data.to_string(),
+            series_type: stream.series_type,
+            original_size: stream.original_size,
+            resolution: stream.resolution,
+        };
+        ActivityStreamRepository::create(&app_state.db_pools, &activity_stream).await?;
     }
 
     Ok(())

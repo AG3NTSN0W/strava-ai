@@ -7,7 +7,6 @@ pub mod repository;
 pub mod strava_client;
 pub mod ollama_client;
 pub mod scheduler;
-pub mod polyline;
 
 pub static DEFAULT_PROMPT: &str = "Write a short, funny Strava title and a two-sentence description for an activity.\
          Use max heart rate to determine if activity was 'Easy,Brutal,Insane'.\

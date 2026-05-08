@@ -11,6 +11,12 @@
 
 
     <link href="/assets/style.css" rel="stylesheet"/>
+    <style>
+        #topbar{display:flex;align-items:center;gap:12px;padding:8px 16px;background:#333;color:#fff;font-size:14px}
+        .nav-menu{display:flex;gap:12px}
+        .nav-menu a{color:#ccc;text-decoration:none;padding:4px 8px;border-radius:4px}
+        .nav-menu a:hover,.nav-menu a.active{color:#fff;background:#555}
+    </style>
     <script>
         const STRAVA_CLIENT_ID = '{{ strava_client_id }}';
         const ATHLETES = {{ athletes | json | safe }};
@@ -23,6 +29,12 @@
 </head>
 
 <body>
+<div id="topbar">
+    <nav class="nav-menu">
+        <a href="/stravai" class="active">Home</a>
+        <a href="/heat/map{% if athletes.len() > 0 %}?athlete_id={{ athletes[0].id }}{% endif %}">Heatmap</a>
+    </nav>
+</div>
 <div id="selected-athletes" class="athletes-header">
     <label class="athletes-name"> </label>
 </div>

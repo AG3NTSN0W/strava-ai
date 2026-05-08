@@ -3,11 +3,6 @@ use serde::{Deserialize, Deserializer, Serialize};
 use std::fmt;
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct ActivityMap {
-     pub summary_polyline: String
-}
-
-#[derive(Debug, Serialize, Deserialize)]
 pub struct Activity {
     pub id: i64,
     pub name: String,
@@ -37,7 +32,6 @@ pub struct Activity {
     pub elev_high: Option<f64>,
     pub elev_low: Option<f64>,
     pub pr_count: Option<i32>,
-    pub map: ActivityMap
 }
 
 impl Activity {

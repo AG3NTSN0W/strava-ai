@@ -1,4 +1,4 @@
-use crate::libs::models::strava::activity::{Activity, ActivityMap};
+use crate::libs::models::strava::activity::Activity;
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
@@ -26,7 +26,6 @@ pub struct AthleteActivity {
     pub elev_high: Option<f64>,
     pub elev_low: Option<f64>,
     pub pr_count: Option<i32>,
-    pub summary_polyline: String,
 }
 
 impl From<AthleteActivity> for Activity {
@@ -52,9 +51,6 @@ impl From<AthleteActivity> for Activity {
             elev_high: a.elev_high,
             elev_low: a.elev_low,
             pr_count: a.pr_count,
-            map: ActivityMap {
-                summary_polyline: a.summary_polyline,
-            },
         }
     }
 }
@@ -83,7 +79,6 @@ impl From<(Activity, i64)> for AthleteActivity {
             elev_high: a.elev_high,
             elev_low: a.elev_low,
             pr_count: a.pr_count,
-            summary_polyline: a.map.summary_polyline,
         }
     }
 }

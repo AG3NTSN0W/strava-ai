@@ -1,5 +1,6 @@
 use crate::libs::StravAIError;
 use crate::libs::models::strava::activity::Activity;
+use crate::libs::models::strava::stream::StreamResponse;
 use crate::libs::models::strava::token::{RefreshToken, Token};
 use crate::libs::models::strava::update_activity::UpdateActivity;
 use chrono::Utc;
@@ -45,7 +46,7 @@ impl StravaClient {
         access_token: &str,
     ) -> Result<Vec<Activity>, Box<dyn std::error::Error + Send + Sync>> {
         debug!("Fetching all activities");
-        let per_page = 200;
+        let per_page = 100;
         let client = reqwest::Client::new();
         let url = format!("{STRAVA_BASE_URL}/athlete/activities?per_page={per_page}");
 
@@ -114,5 +115,21 @@ impl StravaClient {
         }
 
         Err(Box::new(StravAIError("Failed to update activity".into())))
+    }
+
+    pub async fn get_activity_streams(
+        access_token: &str,
+        activity_id: i64,
+    ) -> Result<Vec<StreamResponse>, Box<dyn std::error::Error + Send + Sync>> {
+        debug!("Fetching streams for activity: {activity_id}");
+        let client = reqwest::Client::new();
+        let url = format!(
+            "{STRAVA_BASE_URL}/activities/{activity_id}/streams?keys=distance,heartrate,cadence,latlng,altitude"
+        );
+
+        let response = client.get(&url).bearer_auth(access_token).send().await?;
+
+        let streams = response.json::<Vec<StreamResponse>>().await?;
+        Ok(streams)
     }
 }

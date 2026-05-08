@@ -1,7 +1,8 @@
 use crate::libs::DEFAULT_PROMPT;
 use crate::libs::models::strava::update_activity::UpdateActivity;
 use crate::libs::models::{Athlete, AthleteActivity};
-use crate::libs::repository::{ActivityRepository, AthleteRepository};
+use crate::libs::models::activity_stream::ActivityStream;
+use crate::libs::repository::{ActivityRepository, ActivityStreamRepository, AthleteRepository};
 use crate::{AppState, libs::strava_client::StravaClient};
 use axum::{
     Form,
@@ -146,6 +147,31 @@ pub async fn exchange_token(
                         .unwrap_or_else(|e| {
                             error!("Failed to save activities to database for athlete {athlete_id}: {e}");
                         });
+
+                    // Fetch and save activity streams in background
+                    let pool = app_state.db_pools.clone();
+                    let token = access_token.clone();
+                    let id = athlete_activity.id;
+                    tokio::spawn(async move {
+                        if let Ok(streams) = StravaClient::get_activity_streams(&token, id).await {
+                            for stream in streams {
+                                let activity_stream = ActivityStream {
+                                    id: 0,
+                                    activity_id: id,
+                                    stream_type: stream.stream_type,
+                                    data: stream.data.to_string(),
+                                    series_type: stream.series_type,
+                                    original_size: stream.original_size,
+                                    resolution: stream.resolution,
+                                };
+                                ActivityStreamRepository::create(&pool, &activity_stream)
+                                    .await
+                                    .unwrap_or_else(|e| {
+                                        error!("Failed to save stream for activity {id}: {e}");
+                                    });
+                            }
+                        }
+                    });
                 }
             }
 

@@ -4,24 +4,95 @@
     <meta charset="utf-8">
     <title>Polyline Heatmap</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-    <style>html,body,#map{height:100%;margin:0}</style>
+
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            font-family: sans-serif
+        }
+
+        #topbar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 16px;
+            background: #333;
+            color: #fff;
+            font-size: 14px;
+            position: relative;
+            z-index: 1000
+        }
+
+        .nav-menu {
+            display: flex;
+            gap: 12px
+        }
+
+        .nav-menu a {
+            color: #ccc;
+            text-decoration: none;
+            padding: 4px 8px;
+            border-radius: 4px
+        }
+
+        .nav-menu a:hover, .nav-menu a.active {
+            color: #fff;
+            background: #555
+        }
+
+        #topbar select, #topbar input {
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid #555;
+            font-size: 13px
+        }
+
+        #topbar button {
+            padding: 4px 12px;
+            border-radius: 4px;
+            border: none;
+            background: #fc4c02;
+            color: #fff;
+            cursor: pointer;
+            font-size: 13px
+        }
+
+        #map {
+            height: calc(100% - 44px)
+        }
+    </style>
 </head>
 <body>
+<div id="topbar">
+    <nav class="nav-menu">
+        <a href="/stravai">Home</a>
+        <a href="/heat/map?athlete_id={{ athlete_id }}" class="active">Heatmap</a>
+    </nav>
+    <form id="filters" method="get" action="/heat/map" style="display:flex;align-items:center;gap:8px;margin-left:auto">
+        <input type="hidden" name="athlete_id" value="{{ athlete_id }}"/>
+        <label>Sport:
+            <select name="sport_type" multiple size="1" style="min-width:100px">
+                {% for s in sport_types %}
+                <option value="{{ s }}" {% if selected_sports.contains(&s) %}selected{% endif %}>{{ s }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>From: <input type="date" name="date_from" value="{{ date_from }}"/></label>
+        <label>To: <input type="date" name="date_to" value="{{ date_to }}"/></label>
+        <button type="submit">Apply</button>
+    </form>
+</div>
 <div id="map"></div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="
+https://cdn.jsdelivr.net/npm/leaflet-hotline@0.4.0/dist/leaflet.hotline.min.js
+"></script>
 <script>
-    const map=L.map('map');
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(map);
-    const pts = {{ points_js| json |safe }};
-    const group=L.featureGroup();
-    pts.forEach(p=>{
-        L.circleMarker([p[0],p[1]],{radius:4,fillColor:'hsl('+p[3]+',100%,50%)',fillOpacity:1,stroke:false}).addTo(group);
-    });
-    group.addTo(map);
-    map.fitBounds(group.getBounds(),{padding:[30,30]});
-    const legend=L.control({position:'bottomright'});
-    legend.onAdd=function(){const d=L.DomUtil.create('div');d.style.cssText='background:white;padding:8px 12px;border-radius:4px;box-shadow:0 0 4px rgba(0,0,0,.3);font:12px sans-serif';d.innerHTML='<div style=\"margin-bottom:4px\"><b>Frequency</b></div><div style=\"display:flex;align-items:center;gap:6px\"><span>Low</span><div style=\"width:120px;height:14px;border-radius:3px;background:linear-gradient(to right,hsl(240,100%,50%),hsl(180,100%,50%),hsl(120,100%,50%),hsl(60,100%,50%),hsl(0,100%,50%))\"></div><span>High</span></div>';return d;};
-    legend.addTo(map);
+    const pts = {{points_js | json | safe}};
+    const max_count = {{max_count}};
 </script>
+
+<script src="/assets/heatmap.js" defer></script>
 </body>
 </html>
