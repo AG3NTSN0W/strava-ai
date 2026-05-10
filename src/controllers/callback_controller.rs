@@ -205,6 +205,7 @@ pub async fn backfill_streams(
             .unwrap_or_default();
 
     let count = activities.len();
+    info!("Backfilling streams for {count} activities for athlete {}", params.athlete_id);
 
     let activity_ids: Vec<i64> = activities.into_iter().map(|a| a.id).collect();
     spawn_stream_fetch(app_state.db_pools.clone(), access_token, activity_ids);
