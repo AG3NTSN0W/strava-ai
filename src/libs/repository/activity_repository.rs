@@ -195,6 +195,25 @@ impl ActivityRepository {
             .await
     }
 
+    /// Get activities from the past 6 months for a specific athlete
+    pub async fn get_past_month_by_athlete_id(
+        pool: &Pool<Sqlite>,
+        athlete_id: i64,
+    ) -> Result<Vec<AthleteActivity>, Error> {
+        sqlx::query_as::<_, AthleteActivity>(
+            "SELECT id, athlete_id, name, description, distance, moving_time, elapsed_time, total_elevation_gain,
+                    activity_type, sport_type, start_date_local, achievement_count,
+                    average_speed, max_speed, average_watts, kilojoules, average_heartrate,
+                    max_heartrate, elev_high, elev_low, pr_count
+             FROM activity
+             WHERE athlete_id = ? AND start_date_local >= datetime('now', '-6 months')
+             ORDER BY start_date_local DESC"
+        )
+        .bind(athlete_id)
+        .fetch_all(pool)
+        .await
+    }
+
     pub async fn get_sport_types_by_athlete(
         pool: &Pool<Sqlite>,
         athlete_id: i64,
