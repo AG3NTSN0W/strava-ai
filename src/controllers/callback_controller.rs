@@ -206,9 +206,8 @@ pub async fn backfill_streams(
 
     let count = activities.len();
 
-    for activity in activities {
-        spawn_stream_fetch(app_state.db_pools.clone(), access_token.clone(), activity.id);
-    }
+    let activity_ids: Vec<i64> = activities.into_iter().map(|a| a.id).collect();
+    spawn_stream_fetch(app_state.db_pools.clone(), access_token, activity_ids);
 
     (StatusCode::OK, format!("Backfilling streams for {count} activities")).into_response()
 }
@@ -253,6 +252,8 @@ async fn import_activities(app_state: &AppState, athlete_id: i64, access_token: 
 
     debug!("Importing {} activities for athlete {athlete_id}", activities.len());
 
+    let mut new_activity_ids = Vec::new();
+
     for activity in activities {
         let exists = ActivityRepository::exists(&app_state.db_pools, activity.id)
             .await
@@ -269,32 +270,39 @@ async fn import_activities(app_state: &AppState, athlete_id: i64, access_token: 
             continue;
         }
 
-        spawn_stream_fetch(app_state.db_pools.clone(), access_token.to_string(), activity_id);
+        new_activity_ids.push(activity_id);
+    }
+
+    if !new_activity_ids.is_empty() {
+        spawn_stream_fetch(app_state.db_pools.clone(), access_token.to_string(), new_activity_ids);
     }
 }
 
-fn spawn_stream_fetch(pool: Pool<Sqlite>, access_token: String, activity_id: i64) {
+fn spawn_stream_fetch(pool: Pool<Sqlite>, access_token: String, activity_ids: Vec<i64>) {
     tokio::spawn(async move {
-        let streams = match StravaClient::get_activity_streams(&access_token, activity_id).await {
-            Ok(s) => s,
-            Err(e) => {
-                error!("Failed to fetch streams for activity {activity_id}: {e}");
-                return;
-            }
-        };
-
-        for stream in streams {
-            let activity_stream = ActivityStream {
-                id: 0,
-                activity_id,
-                stream_type: stream.stream_type,
-                data: stream.data.to_string(),
-                series_type: stream.series_type,
-                original_size: stream.original_size,
-                resolution: stream.resolution,
+        for activity_id in activity_ids {
+            let streams = match StravaClient::get_activity_streams(&access_token, activity_id).await
+            {
+                Ok(s) => s,
+                Err(e) => {
+                    error!("Failed to fetch streams for activity {activity_id}: {e}");
+                    continue;
+                }
             };
-            if let Err(e) = ActivityStreamRepository::create(&pool, &activity_stream).await {
-                error!("Failed to save stream for activity {activity_id}: {e}");
+
+            for stream in streams {
+                let activity_stream = ActivityStream {
+                    id: 0,
+                    activity_id,
+                    stream_type: stream.stream_type,
+                    data: stream.data.to_string(),
+                    series_type: stream.series_type,
+                    original_size: stream.original_size,
+                    resolution: stream.resolution,
+                };
+                if let Err(e) = ActivityStreamRepository::create(&pool, &activity_stream).await {
+                    error!("Failed to save stream for activity {activity_id}: {e}");
+                }
             }
         }
     });
