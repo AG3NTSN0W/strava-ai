@@ -28,3 +28,38 @@ impl From<Athlete> for AthleteDisplay {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn test_athlete() -> Athlete {
+        Athlete {
+            id: 42,
+            firstname: "Jane".to_string(),
+            lastname: "Smith".to_string(),
+            premium: true,
+            refresh_token: "token123".to_string(),
+            auto_update: true,
+            prompt: "Generate a title".to_string(),
+        }
+    }
+
+    #[test]
+    fn athlete_to_display_preserves_fields() {
+        let athlete = test_athlete();
+        let display: AthleteDisplay = athlete.into();
+        assert_eq!(display.id, 42);
+        assert_eq!(display.firstname, "Jane");
+        assert_eq!(display.lastname, "Smith");
+    }
+
+    #[test]
+    fn athlete_display_does_not_expose_sensitive_fields() {
+        let athlete = test_athlete();
+        let display: AthleteDisplay = athlete.into();
+        let json = serde_json::to_value(&display).unwrap();
+        assert!(json.get("refresh_token").is_none());
+        assert!(json.get("prompt").is_none());
+    }
+}

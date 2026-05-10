@@ -13,7 +13,7 @@ pub static DEFAULT_PROMPT: &str = "Write a short, funny Strava title and a two-s
          Use a pun if possible, but keep it low-key and cool.";
 
 #[derive(Deserialize, Debug)]
-struct StravAIError(String);
+pub(crate) struct StravAIError(pub(crate) String);
 
 impl fmt::Display for StravAIError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

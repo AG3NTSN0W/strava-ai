@@ -14,11 +14,13 @@ use tokio::time::{Duration, interval};
 fn get_internal_hours() -> f64 {
     env::var("STRAVA_INTERVAL")
         .ok()
-        .map(|id| id.trim().trim_matches('"').parse().unwrap())
-        .unwrap_or_else(|| {
-            warn!("STRAVA_INTERVAL environment variable not set");
-            5.0
+        .and_then(|val| {
+            val.trim().trim_matches('"').parse().ok().or_else(|| {
+                warn!("STRAVA_INTERVAL value '{}' is not a valid number, using default", val);
+                None
+            })
         })
+        .unwrap_or(5.0)
 }
 
 /// Start the background scheduler task
@@ -45,23 +47,34 @@ async fn run_scheduled_task(
     let athletes = AthleteRepository::get_all(&app_state.db_pools).await?;
 
     for athlete in athletes {
-        let access_token = app_state.get_access_token(&athlete).await?;
+        let athlete_name = format!("{} {}", athlete.firstname, athlete.lastname);
+
+        let access_token = match app_state.get_access_token(&athlete).await {
+            Ok(t) => t,
+            Err(e) => {
+                log::error!("Failed to get access token for {athlete_name}: {e}");
+                continue;
+            }
+        };
+
         if !athlete.auto_update {
             debug!(
-                "Summaries generation skipped for athlete: {} {}",
-                athlete.firstname, athlete.lastname
+                "Summaries generation skipped for athlete: {athlete_name}"
             );
 
-            add_activities_to_db(app_state, athlete.id, &access_token).await?;
+            if let Err(e) = add_activities_to_db(app_state, athlete.id, &access_token).await {
+                log::error!("Failed to add activities for {athlete_name}: {e}");
+            }
             continue;
         }
 
-        debug!(
-            "Generate Summaries for athlete: {} {}",
-            athlete.firstname, athlete.lastname
-        );
+        debug!("Generate Summaries for athlete: {athlete_name}");
 
-        generate_summaries(athlete.id, &access_token, app_state, athlete.prompt).await?
+        if let Err(e) =
+            generate_summaries(athlete.id, &access_token, app_state, athlete.prompt).await
+        {
+            log::error!("Failed to generate summaries for {athlete_name}: {e}");
+        }
     }
     Ok(())
 }

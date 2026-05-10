@@ -103,10 +103,17 @@ async fn main() {
         );
 
     // run it
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3400").await.unwrap();
-    debug!("listening on {}", listener.local_addr().unwrap());
-    axum::serve(listener, app).await.unwrap();
-    info!("Application started")
+    let listener = match tokio::net::TcpListener::bind("0.0.0.0:3400").await {
+        Ok(l) => l,
+        Err(e) => {
+            error!("Failed to bind to port 3400: {e}");
+            return;
+        }
+    };
+    info!("Listening on {}", listener.local_addr().unwrap());
+    if let Err(e) = axum::serve(listener, app).await {
+        error!("Server error: {e}");
+    }
 }
 
 fn logging_level() -> LevelFilter {

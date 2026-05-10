@@ -77,11 +77,11 @@ impl ActivityTemplate {
             })
             .iter()
             .map(|activity| {
-                let datetime: DateTime<Utc> = activity
+                let formatted = activity
                     .start_date_local
-                    .parse()
-                    .expect("Invalid date format");
-                let formatted = datetime.format("%d %B %Y %H:%M:%S").to_string();
+                    .parse::<DateTime<Utc>>()
+                    .map(|dt| dt.format("%d %B %Y %H:%M:%S").to_string())
+                    .unwrap_or_else(|_| activity.start_date_local.clone());
 
                 AthleteActivity {
                     start_date_local: formatted,

@@ -4,7 +4,7 @@ use crate::libs::models::strava::stream::StreamResponse;
 use crate::libs::models::strava::token::{RefreshToken, Token};
 use crate::libs::models::strava::update_activity::UpdateActivity;
 use chrono::Utc;
-use log::debug;
+use log::{debug, error};
 
 const STRAVA_BASE_URL: &str = "https://www.strava.com/api/v3";
 const STRAVA_AUTH_URL: &str = "https://www.strava.com/oauth/token";
@@ -19,17 +19,32 @@ impl StravaClient {
         today_start.timestamp()
     }
 
+    /// Checks response status and returns a descriptive error if not successful.
+    async fn check_response(
+        response: reqwest::Response,
+        context: &str,
+    ) -> Result<reqwest::Response, Box<dyn std::error::Error + Send + Sync>> {
+        if response.status().is_success() {
+            return Ok(response);
+        }
+        let status = response.status();
+        let body = response.text().await.unwrap_or_default();
+        error!("Strava API error [{context}]: {status} - {body}");
+        Err(Box::new(StravAIError(format!(
+            "{context}: HTTP {status} - {body}"
+        ))))
+    }
+
     pub async fn get_activities(
         access_token: &str,
         after: i64,
     ) -> Result<Vec<Activity>, Box<dyn std::error::Error + Send + Sync>> {
-        debug!(
-            "Fetching activities with access token: {access_token} and after timestamp: {after}"
-        );
+        debug!("Fetching activities after timestamp: {after}");
         let client = reqwest::Client::new();
         let url = format!("{STRAVA_BASE_URL}/athlete/activities?after={after}");
 
         let response = client.get(&url).bearer_auth(access_token).send().await?;
+        let response = Self::check_response(response, "get_activities").await?;
 
         let activities = response.json::<Vec<Activity>>().await?;
         Ok(activities)
@@ -51,6 +66,7 @@ impl StravaClient {
         let url = format!("{STRAVA_BASE_URL}/athlete/activities?per_page={per_page}");
 
         let response = client.get(&url).bearer_auth(access_token).send().await?;
+        let response = Self::check_response(response, "get_all_activities").await?;
 
         let activities = response.json::<Vec<Activity>>().await?;
         Ok(activities)
@@ -67,9 +83,8 @@ impl StravaClient {
             "{STRAVA_AUTH_URL}?client_id={client_id}&client_secret={client_secret}&code={code}&grant_type=authorization_code"
         );
 
-        debug!("Exchanging authorization code for token with URL: {url}");
-
         let response = client.post(&url).send().await?;
+        let response = Self::check_response(response, "exchange_authorization_code").await?;
 
         let token_response = response.json::<Token>().await?;
         Ok(token_response)
@@ -87,6 +102,7 @@ impl StravaClient {
         );
 
         let response = client.post(&url).send().await?;
+        let response = Self::check_response(response, "refresh_token").await?;
 
         let token_response = response.json::<RefreshToken>().await?;
         Ok(token_response)
@@ -97,9 +113,7 @@ impl StravaClient {
         activity_id: u64,
         update: &UpdateActivity,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        debug!(
-            "Updating activity for client_id: {activity_id}. Update: {update:?}"
-        );
+        debug!("Updating activity: {activity_id}. Update: {update:?}");
         let client = reqwest::Client::new();
         let url = format!("{STRAVA_BASE_URL}/activities/{activity_id}");
 
@@ -110,11 +124,8 @@ impl StravaClient {
             .send()
             .await?;
 
-        if response.status().is_success() {
-            return Ok(());
-        }
-
-        Err(Box::new(StravAIError("Failed to update activity".into())))
+        Self::check_response(response, &format!("update_activity {activity_id}")).await?;
+        Ok(())
     }
 
     pub async fn get_activity_streams(
@@ -128,6 +139,8 @@ impl StravaClient {
         );
 
         let response = client.get(&url).bearer_auth(access_token).send().await?;
+        let response =
+            Self::check_response(response, &format!("get_activity_streams {activity_id}")).await?;
 
         let streams = response.json::<Vec<StreamResponse>>().await?;
         Ok(streams)
