@@ -1,10 +1,16 @@
+use sqlx::sqlite::SqliteConnectOptions;
 use sqlx::{Error, Pool, Sqlite, SqlitePool};
+use std::str::FromStr;
 
 pub struct DbPool {}
 
 impl DbPool {
     pub async fn connect_to_db(database_url: &str) -> Result<Pool<Sqlite>, Error> {
-        let pool = SqlitePool::connect(database_url).await?;
+        let options = SqliteConnectOptions::from_str(database_url)?
+            .journal_mode(sqlx::sqlite::SqliteJournalMode::Wal)
+            .synchronous(sqlx::sqlite::SqliteSynchronous::Normal)
+            .busy_timeout(std::time::Duration::from_secs(30));
+        let pool = SqlitePool::connect_with(options).await?;
         Ok(pool)
     }
 

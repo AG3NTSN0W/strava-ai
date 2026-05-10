@@ -124,7 +124,7 @@ impl StravaClient {
         debug!("Fetching streams for activity: {activity_id}");
         let client = reqwest::Client::new();
         let url = format!(
-            "{STRAVA_BASE_URL}/activities/{activity_id}/streams?keys=distance,heartrate,cadence,latlng,altitude"
+            "{STRAVA_BASE_URL}/activities/{activity_id}/streams?keys=distance,heartrate,cadence,latlng,altitude,velocity_smooth"
         );
 
         let response = client.get(&url).bearer_auth(access_token).send().await?;

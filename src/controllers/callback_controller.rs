@@ -289,3 +289,61 @@ pub async fn update_settings(
         }
     }
 }
+
+#[derive(Debug, Deserialize)]
+pub struct BackfillStreamsQuery {
+    pub athlete_id: i64,
+}
+
+pub async fn backfill_streams(
+    Query(params): Query<BackfillStreamsQuery>,
+    State(app_state): State<Arc<AppState>>,
+) -> impl IntoResponse {
+    let athlete = match AthleteRepository::get_by_id(&app_state.db_pools, params.athlete_id).await {
+        Ok(Some(a)) => a,
+        _ => return (StatusCode::NOT_FOUND, "Athlete not found").into_response(),
+    };
+
+    let access_token = match app_state.get_access_token(&athlete).await {
+        Ok(at) => at,
+        Err(e) => {
+            error!("Failed to get access token: {e}");
+            return (StatusCode::INTERNAL_SERVER_ERROR, "Access token error").into_response();
+        }
+    };
+
+    let activities = ActivityRepository::get_by_athlete_id(&app_state.db_pools, params.athlete_id)
+        .await
+        .unwrap_or_default();
+
+    let activities: Vec<_> = activities.into_iter().take(200).collect();
+    let count = activities.len();
+
+    for activity in activities {
+        let pool = app_state.db_pools.clone();
+        let token = access_token.clone();
+        let id = activity.id;
+        tokio::spawn(async move {
+            if let Ok(streams) = StravaClient::get_activity_streams(&token, id).await {
+                for stream in streams {
+                    let activity_stream = ActivityStream {
+                        id: 0,
+                        activity_id: id,
+                        stream_type: stream.stream_type,
+                        data: stream.data.to_string(),
+                        series_type: stream.series_type,
+                        original_size: stream.original_size,
+                        resolution: stream.resolution,
+                    };
+                    ActivityStreamRepository::create(&pool, &activity_stream)
+                        .await
+                        .unwrap_or_else(|e| {
+                            error!("Failed to save stream for activity {id}: {e}");
+                        });
+                }
+            }
+        });
+    }
+
+    (StatusCode::OK, format!("Backfilling streams for {count} activities")).into_response()
+}

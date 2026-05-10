@@ -47,6 +47,7 @@ pub fn routes(app_state: Arc<AppState>) -> Router {
         .route("/athlete", get(activity_template::get_template))
         .route("/update/activity", post(callback_controller::update_activity))
         .route("/update/settings", post(callback_controller::update_settings))
+        .route("/backfill/streams", get(callback_controller::backfill_streams))
         .route("/heat/map", get(heatmap_template::get_template))
         .with_state(app_state)
 }

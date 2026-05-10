@@ -1,9 +1,20 @@
 use crate::libs::models::activity_stream::ActivityStream;
 use sqlx::{Error, Pool, Row, Sqlite};
+use std::collections::HashMap;
 
 pub struct HeartRateLatLngResults {
     pub latlng: Vec<Vec<Vec<f64>>>,
     pub heartrate: Vec<Vec<f64>>,
+}
+
+pub struct AltitudeLatLngResults {
+    pub latlng: Vec<Vec<Vec<f64>>>,
+    pub altitude: Vec<Vec<f64>>,
+}
+
+pub struct VelocityLatLngResults {
+    pub latlng: Vec<Vec<Vec<f64>>>,
+    pub velocity: Vec<Vec<f64>>,
 }
 
 pub struct ActivityStreamRepository;
@@ -129,9 +140,9 @@ impl ActivityStreamRepository {
         date_to: Option<&str>,
     ) -> Result<HeartRateLatLngResults, Box<dyn std::error::Error + Send + Sync>> {
         let mut sql = String::from(
-            "SELECT s.data, s.stream_type FROM activity_stream s
+            "SELECT s.activity_id, s.data, s.stream_type FROM activity_stream s
              JOIN activity a ON a.id = s.activity_id
-             WHERE a.athlete_id = ? AND s.stream_type = 'latlng' AND s.stream_type = 'heartrate'",
+             WHERE a.athlete_id = ? AND s.stream_type IN ('latlng', 'heartrate')",
         );
 
         if let Some(types) = sport_types {
@@ -149,6 +160,7 @@ impl ActivityStreamRepository {
         if date_to.is_some() {
             sql.push_str(" AND a.start_date_local <= ?");
         }
+        sql.push_str(" ORDER BY s.activity_id");
 
         let mut query = sqlx::query(&sql).bind(athlete_id);
 
@@ -166,22 +178,184 @@ impl ActivityStreamRepository {
 
         let rows = query.fetch_all(pool).await?;
 
-        let mut latlng: Vec<Vec<Vec<f64>>> = Vec::new();
-        let mut heartrate: Vec<f64> = Vec::new();
+        // Group streams by activity_id to keep latlng and heartrate paired
+        let mut activity_latlng: HashMap<i64, Vec<Vec<f64>>> = HashMap::new();
+        let mut activity_hr: HashMap<i64, Vec<f64>> = HashMap::new();
 
         for row in rows {
+            let activity_id: i64 = row.get("activity_id");
             let stream_type: &str = row.get("stream_type");
-            if (stream_type == "heartrate") {
-                let data: String = row.get("data");
-                let parsed: f64 = serde_json::from_str(&data)?;
-                heartrate.push(parsed);
+            let data: String = row.get("data");
+            if stream_type == "heartrate" {
+                let parsed: Vec<f64> = serde_json::from_str(&data)?;
+                activity_hr.insert(activity_id, parsed);
             } else if stream_type == "latlng" {
-                let data: String = row.get("data");
                 let parsed: Vec<Vec<f64>> = serde_json::from_str(&data)?;
-                latlng.push(parsed);
+                activity_latlng.insert(activity_id, parsed);
+            }
+        }
+
+        // Only include activities that have both streams
+        let mut latlng: Vec<Vec<Vec<f64>>> = Vec::new();
+        let mut heartrate: Vec<Vec<f64>> = Vec::new();
+
+        for (id, ll) in activity_latlng {
+            if let Some(hr) = activity_hr.remove(&id) {
+                latlng.push(ll);
+                heartrate.push(hr);
             }
         }
 
         Ok(HeartRateLatLngResults { heartrate, latlng })
+    }
+
+    pub async fn get_latlng_altitude_points_filtered(
+        pool: &Pool<Sqlite>,
+        athlete_id: i64,
+        sport_types: Option<&[&str]>,
+        date_from: Option<&str>,
+        date_to: Option<&str>,
+    ) -> Result<AltitudeLatLngResults, Box<dyn std::error::Error + Send + Sync>> {
+        let mut sql = String::from(
+            "SELECT s.activity_id, s.data, s.stream_type FROM activity_stream s
+             JOIN activity a ON a.id = s.activity_id
+             WHERE a.athlete_id = ? AND s.stream_type IN ('latlng', 'altitude')",
+        );
+
+        if let Some(types) = sport_types {
+            if !types.is_empty() {
+                let placeholders: Vec<&str> = types.iter().map(|_| "?").collect();
+                sql.push_str(&format!(
+                    " AND a.sport_type IN ({})",
+                    placeholders.join(",")
+                ));
+            }
+        }
+        if date_from.is_some() {
+            sql.push_str(" AND a.start_date_local >= ?");
+        }
+        if date_to.is_some() {
+            sql.push_str(" AND a.start_date_local <= ?");
+        }
+        sql.push_str(" ORDER BY s.activity_id");
+
+        let mut query = sqlx::query(&sql).bind(athlete_id);
+
+        if let Some(types) = sport_types {
+            for t in types {
+                query = query.bind(*t);
+            }
+        }
+        if let Some(from) = date_from {
+            query = query.bind(from);
+        }
+        if let Some(to) = date_to {
+            query = query.bind(to);
+        }
+
+        let rows = query.fetch_all(pool).await?;
+
+        let mut activity_latlng: HashMap<i64, Vec<Vec<f64>>> = HashMap::new();
+        let mut activity_alt: HashMap<i64, Vec<f64>> = HashMap::new();
+
+        for row in rows {
+            let activity_id: i64 = row.get("activity_id");
+            let stream_type: &str = row.get("stream_type");
+            let data: String = row.get("data");
+            if stream_type == "altitude" {
+                let parsed: Vec<f64> = serde_json::from_str(&data)?;
+                activity_alt.insert(activity_id, parsed);
+            } else if stream_type == "latlng" {
+                let parsed: Vec<Vec<f64>> = serde_json::from_str(&data)?;
+                activity_latlng.insert(activity_id, parsed);
+            }
+        }
+
+        let mut latlng: Vec<Vec<Vec<f64>>> = Vec::new();
+        let mut altitude: Vec<Vec<f64>> = Vec::new();
+
+        for (id, ll) in activity_latlng {
+            if let Some(alt) = activity_alt.remove(&id) {
+                latlng.push(ll);
+                altitude.push(alt);
+            }
+        }
+
+        Ok(AltitudeLatLngResults { altitude, latlng })
+    }
+
+    pub async fn get_latlng_velocity_points_filtered(
+        pool: &Pool<Sqlite>,
+        athlete_id: i64,
+        sport_types: Option<&[&str]>,
+        date_from: Option<&str>,
+        date_to: Option<&str>,
+    ) -> Result<VelocityLatLngResults, Box<dyn std::error::Error + Send + Sync>> {
+        let mut sql = String::from(
+            "SELECT s.activity_id, s.data, s.stream_type FROM activity_stream s
+             JOIN activity a ON a.id = s.activity_id
+             WHERE a.athlete_id = ? AND s.stream_type IN ('latlng', 'velocity_smooth')",
+        );
+
+        if let Some(types) = sport_types {
+            if !types.is_empty() {
+                let placeholders: Vec<&str> = types.iter().map(|_| "?").collect();
+                sql.push_str(&format!(
+                    " AND a.sport_type IN ({})",
+                    placeholders.join(",")
+                ));
+            }
+        }
+        if date_from.is_some() {
+            sql.push_str(" AND a.start_date_local >= ?");
+        }
+        if date_to.is_some() {
+            sql.push_str(" AND a.start_date_local <= ?");
+        }
+        sql.push_str(" ORDER BY s.activity_id");
+
+        let mut query = sqlx::query(&sql).bind(athlete_id);
+
+        if let Some(types) = sport_types {
+            for t in types {
+                query = query.bind(*t);
+            }
+        }
+        if let Some(from) = date_from {
+            query = query.bind(from);
+        }
+        if let Some(to) = date_to {
+            query = query.bind(to);
+        }
+
+        let rows = query.fetch_all(pool).await?;
+
+        let mut activity_latlng: HashMap<i64, Vec<Vec<f64>>> = HashMap::new();
+        let mut activity_vel: HashMap<i64, Vec<f64>> = HashMap::new();
+
+        for row in rows {
+            let activity_id: i64 = row.get("activity_id");
+            let stream_type: &str = row.get("stream_type");
+            let data: String = row.get("data");
+            if stream_type == "velocity_smooth" {
+                let parsed: Vec<f64> = serde_json::from_str(&data)?;
+                activity_vel.insert(activity_id, parsed);
+            } else if stream_type == "latlng" {
+                let parsed: Vec<Vec<f64>> = serde_json::from_str(&data)?;
+                activity_latlng.insert(activity_id, parsed);
+            }
+        }
+
+        let mut latlng: Vec<Vec<Vec<f64>>> = Vec::new();
+        let mut velocity: Vec<Vec<f64>> = Vec::new();
+
+        for (id, ll) in activity_latlng {
+            if let Some(vel) = activity_vel.remove(&id) {
+                latlng.push(ll);
+                velocity.push(vel);
+            }
+        }
+
+        Ok(VelocityLatLngResults { velocity, latlng })
     }
 }
