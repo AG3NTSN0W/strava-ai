@@ -129,7 +129,7 @@ pub async fn update_activity(
     };
 
     if let Err(e) =
-        StravaClient::update_activity(&access_token, update.activity_id, &strava_update).await
+        StravaClient::update_activity(&access_token, update.activity_id, &strava_update, &app_state).await
     {
         error!("Failed to update activity on Strava: {e}");
         return (
@@ -208,7 +208,7 @@ pub async fn backfill_streams(
     info!("Backfilling streams for {count} activities for athlete {}", params.athlete_id);
 
     let activity_ids: Vec<i64> = activities.into_iter().map(|a| a.id).collect();
-    spawn_stream_fetch(app_state.db_pools.clone(), access_token, activity_ids);
+    spawn_stream_fetch((*app_state).clone(), access_token, activity_ids);
 
     (StatusCode::OK, format!("Backfilling streams for {count} activities")).into_response()
 }
@@ -244,7 +244,7 @@ async fn get_athlete(pool: &Pool<Sqlite>, athlete_id: i64) -> Result<Athlete, Re
 }
 
 async fn import_activities(app_state: &AppState, athlete_id: i64, access_token: &str) {
-    let activities = StravaClient::get_all_activities(access_token)
+    let activities = StravaClient::get_all_activities(access_token, app_state)
         .await
         .unwrap_or_else(|e| {
             error!("Failed to fetch activities for athlete {athlete_id}: {e}");
@@ -275,14 +275,14 @@ async fn import_activities(app_state: &AppState, athlete_id: i64, access_token: 
     }
 
     if !new_activity_ids.is_empty() {
-        spawn_stream_fetch(app_state.db_pools.clone(), access_token.to_string(), new_activity_ids);
+        spawn_stream_fetch(app_state.clone(), access_token.to_string(), new_activity_ids);
     }
 }
 
-fn spawn_stream_fetch(pool: Pool<Sqlite>, access_token: String, activity_ids: Vec<i64>) {
+fn spawn_stream_fetch(app_state: AppState, access_token: String, activity_ids: Vec<i64>) {
     tokio::spawn(async move {
         for activity_id in activity_ids {
-            let streams = match StravaClient::get_activity_streams(&access_token, activity_id).await
+            let streams = match StravaClient::get_activity_streams(&access_token, activity_id, &app_state).await
             {
                 Ok(s) => s,
                 Err(e) => {
@@ -301,7 +301,7 @@ fn spawn_stream_fetch(pool: Pool<Sqlite>, access_token: String, activity_ids: Ve
                     original_size: stream.original_size,
                     resolution: stream.resolution,
                 };
-                if let Err(e) = ActivityStreamRepository::create(&pool, &activity_stream).await {
+                if let Err(e) = ActivityStreamRepository::create(&app_state.db_pools, &activity_stream).await {
                     error!("Failed to save stream for activity {activity_id}: {e}");
                 }
             }

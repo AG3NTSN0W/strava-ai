@@ -9,6 +9,7 @@ services:
     volumes:
       - /tmp/stravai:/config
       - ./assets:/assets
+      - /etc/localtime:/etc/localtime:ro
     environment:
       - STRAVA_CLIENT_ID="${STRAVA_CLIENT_ID:-}"
       - STRAVA_CLIENT_SECRET="${STRAVA_CLIENT_SECRET:-}"

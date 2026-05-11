@@ -124,7 +124,7 @@ impl HeatmapTemplate {
             }
         };
 
-        debug!("Routes found and heatmap built: {:?}", heat_map_data);
+        debug!("Routes found and heatmap built: {heat_map_data:?}");
 
         Self {
             athlete_id,

@@ -16,7 +16,7 @@ fn get_internal_hours() -> f64 {
         .ok()
         .and_then(|val| {
             val.trim().trim_matches('"').parse().ok().or_else(|| {
-                warn!("STRAVA_INTERVAL value '{}' is not a valid number, using default", val);
+                warn!("STRAVA_INTERVAL value '{val}' is not a valid number, using default");
                 None
             })
         })
@@ -44,6 +44,11 @@ pub async fn start_scheduler(app_state: Arc<AppState>) {
 async fn run_scheduled_task(
     app_state: &AppState,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    if !app_state.rate_limit.read().await.has_budget() {
+        warn!("Skipping scheduled task: rate limit budget exhausted");
+        return Ok(());
+    }
+
     let athletes = AthleteRepository::get_all(&app_state.db_pools).await?;
 
     for athlete in athletes {
@@ -84,7 +89,7 @@ async fn add_activities_to_db(
     athlete_id: i64,
     access_token: &str,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let activities: Vec<Activity> = StravaClient::get_activities_for_today(access_token).await?;
+    let activities: Vec<Activity> = StravaClient::get_activities_for_today(access_token, app_state).await?;
     for activity in activities {
         let name = activity.name.to_string();
         update_activities_table(app_state, athlete_id, &activity, &name, "").await?;
@@ -135,7 +140,7 @@ async fn generate_summaries(
     app_state: &AppState,
     prompt: String,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let activities: Vec<Activity> = StravaClient::get_activities_for_today(access_token).await?;
+    let activities: Vec<Activity> = StravaClient::get_activities_for_today(access_token, app_state).await?;
     for activity in activities {
         if ActivityRepository::exists(&app_state.db_pools, activity.id).await? {
             continue;
@@ -165,6 +170,7 @@ async fn generate_summaries(
                 hide_from_home: None,
                 gear_id: None,
             },
+            app_state,
         )
         .await?;
 
@@ -186,7 +192,7 @@ async fn fetch_and_save_streams(
         return Ok(());
     }
 
-    let streams = StravaClient::get_activity_streams(access_token, activity_id).await?;
+    let streams = StravaClient::get_activity_streams(access_token, activity_id, app_state).await?;
 
     for stream in streams {
         let activity_stream = ActivityStream {
