@@ -8,13 +8,15 @@ use axum::{
 };
 use axum::routing::{post, put};
 use log::error;
+use serde::Deserialize;
 use crate::AppState;
 
 pub mod callback_controller;
 pub mod main_template;
 mod ai_template;
-mod activity_template;
+mod activity_feed_template;
 mod heatmap_template;
+mod settings_template;
 
 struct HtmlTemplate<T>(T);
 
@@ -38,16 +40,22 @@ where
     }
 }
 
+#[derive(Deserialize)]
+pub struct TemplateQueryParams {
+    athlete_id: i64,
+}
+
 pub fn routes(app_state: Arc<AppState>) -> Router {
     Router::new()
         .route("/", get(|| async { Redirect::permanent("/stravai") }))
         .route("/stravai", get(main_template::get_template))
         .route("/exchange_token", get(callback_controller::exchange_token))
         .route("/generate", put(ai_template::get_template))
-        .route("/athlete", get(activity_template::get_template))
+        .route("/athlete", get(activity_feed_template::get_template))
         .route("/update/activity", post(callback_controller::update_activity))
         .route("/update/settings", post(callback_controller::update_settings))
         .route("/backfill/streams", get(callback_controller::backfill_streams))
         .route("/heat/map", get(heatmap_template::get_template))
+        .route("/settings", get(settings_template::get_template))
         .with_state(app_state)
 }

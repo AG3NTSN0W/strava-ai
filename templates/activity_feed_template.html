@@ -1,0 +1,72 @@
+<header class="mb-stack-lg">
+    <h1 class="font-display text-display text-on-surface mb-2">Activity Feed</h1>
+    <!-- Filters and Search -->
+    <section class="flex flex-col md:flex-row gap-gutter mb-stack-lg items-end">
+
+        <div class="w-full md:w-48">
+            <label class="block font-label-sm text-secondary mb-2 uppercase">Type</label>
+            <select class="w-full bg-surface border border-outline-variant rounded-lg py-3 px-4 focus:outline-none focus:border-primary transition-colors font-body-md appearance-none">
+                <option>All Activities</option>
+                <option>Run</option>
+                <option>Ride</option>
+                <option>Swim</option>
+            </select>
+        </div>
+
+    </section>
+</header>
+<div class="grid gap-stack-md overflow-y-auto flex-1">
+    <div id="activity-feed" class="grid gap-stack-md">
+        {% for activity in activities %}
+        <div class="group bg-surface-container-lowest border border-outline-variant rounded-xl p-stack-md hover:shadow-lg transition-all duration-300 flex flex-col md:flex-row md:items-center gap-6">
+            <div class="w-16 h-16 bg-primary-container text-on-primary-container flex items-center justify-center rounded-xl shrink-0">
+                <!--        <span class="material-symbols-outlined text-4xl"            -->
+                <!--              data-icon="{{activity.sport_type}}">{{activity.sport_type}}</span>-->
+                {% if activity.sport_type == "Run" %}
+                <span class="material-symbols-outlined text-4xl" data-icon="directions_run">directions_run</span>
+                {% else if activity.sport_type == "Ride" %}
+                <span class="material-symbols-outlined text-4xl" data-icon="directions_bike">directions_bike</span>
+                {% else %}
+                <span class="material-symbols-outlined text-4xl" data-icon="fitness_center">fitness_center</span>
+                {% endif %}
+
+            </div>
+            <div class="flex-1">
+                <div class="flex items-center gap-3 mb-1">
+                    <h3 class="font-headline-md text-on-surface"> {{ activity.name }}</h3>
+                    <div>{{ activity.description }}</div>
+                </div>
+                <p class="text-secondary font-label-md mb-3">{{activity.start_date_local}}</p>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                        <p class="font-label-sm text-secondary uppercase text-[10px]">Distance</p>
+                        <p class="font-data-mono text-on-surface font-bold">{{activity.distance}} km</p>
+                    </div>
+                    <div>
+                        <p class="font-label-sm text-secondary uppercase text-[10px]">Elapsed Time</p>
+                        <p class="font-data-mono text-on-surface font-bold">{{activity.elapsed_time}}</p>
+                    </div>
+
+                    {% match activity.average_heartrate %}
+                    {% when Some(data) %}
+                    <div>
+                        <p class="font-label-sm text-secondary uppercase text-[10px]">Avg Heart Rate</p>
+                        <p class="font-data-mono text-on-surface font-bold"> {{ "{:.0}"|format(data) }} bpm</p>
+                    </div>
+                    {% when None %}
+                    {% endmatch %}
+
+                    {% match activity.pr_count %}
+                    {% when Some(data) %}
+                    <div>
+                        <p class="font-label-sm text-secondary uppercase text-[10px]">PR count</p>
+                        <p class="font-data-mono text-on-surface font-bold">{{data}}</p>
+                    </div>
+                    {% when None %}
+                    {% endmatch %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>

@@ -17,6 +17,7 @@ struct HeatMapData {
     low_count: i32,
     palette: HashMap<String, String>,
     frequency_colors: String,
+
 }
 
 struct HeatmapQueryParams {

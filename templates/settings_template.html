@@ -1,0 +1,139 @@
+<div class="bg-primary text-on-primary px-stack-md py-stack-sm rounded-xl mb-stack-lg flex items-center justify-between shadow-md">
+    <div class="flex items-center gap-stack-sm">
+        <span class="material-symbols-outlined">sync</span>
+        <span class="font-label-md">Sync activity map data</span>
+    </div>
+    <button class="bg-on-primary text-primary px-stack-md py-1 rounded-full text-label-sm font-bold hover:bg-surface-container-lowest transition-colors">
+        Sync with Strava
+    </button>
+</div>
+<!-- Header Section -->
+<header class="mb-stack-lg">
+    <h2 class="font-headline-lg text-headline-lg text-on-surface mb-unit">AI &amp; Account Settings</h2>
+</header>
+<!-- Bento Grid Layout for Settings -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-gutter">
+    <!-- AI Persona Section (Expanded Bento Item) -->
+    <section
+            class="md:col-span-12 bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm">
+        <div class="p-stack-md border-b border-outline-variant flex items-center justify-between">
+            <div class="flex items-center gap-stack-sm">
+                <span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">psychology</span>
+                <h3 class="font-headline-md text-headline-md text-on-surface">AI Persona</h3>
+            </div>
+        </div>
+        <div class="p-stack-md">
+            <label class="block font-label-md text-on-surface-variant mb-unit">Base Behavioral Prompt</label>
+            <p class="text-secondary font-body-md mb-stack-md text-sm">Define how the AI should generate your
+                activity titles and descriptions.</p>
+            <textarea
+                    class="w-full h-40 bg-surface-container-low border border-outline rounded-lg p-stack-md font-data-mono text-on-surface focus:ring-2 focus:ring-primary focus:border-primary transition-all resize-none">{{prompt}}</textarea>
+            <div class="mt-stack-md flex flex-wrap gap-stack-sm">
+                <button class="px-stack-md py-stack-sm bg-primary text-on-primary rounded-lg font-label-md transition-all active:scale-95 shadow-sm hover:bg-primary-container">
+                    Save Changes
+                </button>
+            </div>
+        </div>
+    </section>
+    <!-- Sync Preferences (Medium Bento Item) - NEW SECTION -->
+    <section
+            class="md:col-span-6 bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm">
+        <div class="p-stack-md border-b border-outline-variant flex items-center gap-stack-sm">
+            <span class="material-symbols-outlined text-primary">sync_alt</span>
+            <h3 class="font-headline-md text-headline-md text-on-surface">Sync Preferences</h3>
+        </div>
+        <div class="p-stack-md flex flex-col gap-stack-md">
+            <div class="flex items-center justify-between bg-surface-container-low p-stack-md rounded-lg border border-outline-variant">
+                <div>
+                    <h4 class="font-label-md text-on-surface font-bold">Auto Update</h4>
+                    <p class="text-secondary text-[12px] font-body-md">Automatically generate activity titles and descriptions</p>
+                </div>
+                <div class="relative inline-block w-12 align-middle select-none transition duration-200 ease-in">
+                    <input {% if auto_update %} checked {% endif %}
+                           class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer checked:right-0 right-6 border-outline-variant transition-all duration-300 ease-in-out"
+                           id="toggle" name="toggle" type="checkbox"/>
+                    <label class="toggle-label block overflow-hidden h-6 rounded-full bg-surface-container-highest cursor-pointer transition-colors duration-300 ease-in-out"
+                           for="toggle"></label>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- Display Preferences (Medium Bento Item) -->
+    <section
+            class="md:col-span-6 bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm">
+        <div class="p-stack-md border-b border-outline-variant flex items-center gap-stack-sm">
+            <span class="material-symbols-outlined text-primary">palette</span>
+            <h3 class="font-headline-md text-headline-md text-on-surface">Display Preferences</h3>
+        </div>
+        <div class="p-stack-md grid grid-cols-2 gap-stack-md">
+            <div id="theme-light" onclick="toggleTheme('light')" class="relative cursor-pointer group border-2 border-primary rounded-lg p-stack-sm" style="background-color: #fbf9f9;">
+                <div class="h-20 rounded-md mb-stack-sm flex items-center justify-center overflow-hidden" style="background-color: #f5f3f3;">
+                    <div class="w-3/4 h-2 rounded-full mb-1" style="background-color: #e6beb2;"></div>
+                    <div class="w-1/2 h-2 rounded-full" style="background-color: #e6beb2;"></div>
+                </div>
+                <p class="font-label-md text-center" style="color: #1b1c1c;">Light Mode</p>
+                <div class="theme-check absolute top-2 right-2 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
+                        <span class="material-symbols-outlined text-[12px] text-white"
+                              style="font-variation-settings: 'wght' 700;">check</span>
+                </div>
+            </div>
+            <div id="theme-dark" onclick="toggleTheme('dark')" class="relative cursor-pointer group border border-outline-variant rounded-lg p-stack-sm hover:border-primary transition-all" style="background-color: #131313;">
+                <div class="h-20 rounded-md mb-stack-sm flex items-center justify-center overflow-hidden" style="background-color: #201f1f;">
+                    <div class="w-3/4 h-2 rounded-full mb-1" style="background-color: #5c4038;"></div>
+                    <div class="w-1/2 h-2 rounded-full" style="background-color: #5c4038;"></div>
+                </div>
+                <p class="font-label-md text-center" style="color: #e5e2e1;">Dark Mode</p>
+                <div class="theme-check absolute top-2 right-2 w-4 h-4 bg-primary rounded-full items-center justify-center hidden">
+                        <span class="material-symbols-outlined text-[12px] text-white"
+                              style="font-variation-settings: 'wght' 700;">check</span>
+                </div>
+            </div>
+        </div>
+        <script>
+            function toggleTheme(mode) {
+                const html = document.documentElement;
+                html.classList.remove('light', 'dark');
+                html.classList.add(mode);
+                localStorage.setItem('selectedTheme', mode);
+
+                const lightCard = document.getElementById('theme-light');
+                const darkCard = document.getElementById('theme-dark');
+
+                if (mode === 'dark') {
+                    lightCard.className = 'relative cursor-pointer group border border-outline-variant rounded-lg p-stack-sm hover:border-primary transition-all';
+                    lightCard.querySelector('.theme-check').classList.add('hidden');
+                    darkCard.className = 'relative cursor-pointer group border-2 border-primary rounded-lg p-stack-sm';
+                    darkCard.querySelector('.theme-check').classList.remove('hidden');
+                    darkCard.querySelector('.theme-check').classList.add('flex');
+                } else {
+                    darkCard.className = 'relative cursor-pointer group border border-outline-variant rounded-lg p-stack-sm hover:border-primary transition-all';
+                    darkCard.querySelector('.theme-check').classList.add('hidden');
+                    darkCard.querySelector('.theme-check').classList.remove('flex');
+                    lightCard.className = 'relative cursor-pointer group border-2 border-primary rounded-lg p-stack-sm';
+                    lightCard.querySelector('.theme-check').classList.remove('hidden');
+                    lightCard.querySelector('.theme-check').classList.add('flex');
+                }
+            }
+
+            // Initialize card state based on saved theme
+            (function() {
+                const saved = localStorage.getItem('selectedTheme') || 'light';
+                if (saved === 'dark') toggleTheme('dark');
+            })();
+        </script>
+    </section>
+    <!-- Visual Focus / Illustration Card -->
+    <section
+            class="md:col-span-12 bg-primary-container text-on-primary-container rounded-xl overflow-hidden relative min-h-[200px] shadow-sm">
+        <img alt="A cinematic photograph of a professional cyclist in mid-sprint on a misty mountain road at dawn."
+             class="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-overlay"
+             src="https://lh3.googleusercontent.com/aida-public/AB6AXuAN0X4QD8rWj_1QgAiIxHKcg_KuEG7GtmAf69W3BIzwD8r1CjwU0dqHytnlXytl4t0H5eghdSNvpPxBJMfZ7CAeWHqOG_yOTCELXEJHPdZIkKNPD-6skhCXOiG3tySwXCnZylxA2vJTlhFTPsNCbZWg71ZIetTm-fsXF5pKeSMXw-GpjReaCbnj-tajOam4LBiYb9GyHN_MRINem-uG9aUn8qix1r1ZnQlCOELSEjGDGKd3pzndW_hWq5S_pfrEusme4PAFAgxXSDZi"/>
+        <div class="relative z-10 p-stack-lg h-full flex flex-col justify-end">
+            <h4 class="font-display text-headline-md font-black uppercase tracking-tighter mb-unit">Precision
+                Engineering</h4>
+            <p class="font-body-md opacity-90 max-w-lg">Every setting you adjust recalibrates the AI model to match
+                your specific physiological demands and data flow requirements.</p>
+        </div>
+    </section>
+</div>
+
