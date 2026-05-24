@@ -97,90 +97,87 @@ tailwind.config = {
 
 let map; // declared at the top level
 
-const themes = {
-    dark: '/assets/themes/dark_theme.css',
-    light: '/assets/themes/light_theme.css',
-};
-
 function connectWithStrava() {
     const hostUrl = window.location.origin;
     const redirectUri = encodeURIComponent(hostUrl + '/exchange_token');
     const stravaAuthUrl = `https://www.strava.com/oauth/authorize?client_id=${STRAVA_CLIENT_ID}&response_type=code&redirect_uri=${redirectUri}&approval_prompt=force&scope=activity:read,activity:write`;
-
     window.location.href = stravaAuthUrl;
 }
 
-const before_request = () => {
-    document.getElementById("activity-data").innerHTML = ""
-}
-
-const before_request_activity = () => {
-    document.getElementById("activity-results").innerHTML = ""
-}
-
-const before_request_ai = () => {
-    document.getElementById("ai-summary").innerHTML = ""
-}
-
-const applyTheme = (themeName) => {
-    // Remove existing theme link if it exists
-    const existingThemeLink = document.getElementById('theme-link');
-    if (existingThemeLink) {
-        existingThemeLink.remove();
-    }
-
-    // Create new theme link Element
-    const themeLink = document.createElement('link');
-    themeLink.id = 'theme-link';
-    themeLink.rel = 'stylesheet';
-    themeLink.href = themes[themeName] ? themes[themeName] : 'light';
-
-    // Add theme link to head
-    document.head.appendChild(themeLink);
-};
-
-const changeTheme = (event) => {
-    const selectedTheme = event.target.value;
-    applyTheme(selectedTheme);
-    localStorage.setItem('selectedTheme', selectedTheme);
-};
-
-
 const navigate_to = (navigate_to) => {
     set_nav(navigate_to)
-    if (ATHLETES && ATHLETES.length === 1) {
-        const athlete = ATHLETES[0]
 
-        switch (navigate_to) {
-            case "settings":
-                htmx.ajax('GET', `/settings?athlete_id=${athlete.id}`, '#main-area');
-                break;
-            case "activityFeed":
-                htmx.ajax('GET', `/athlete?athlete_id=${athlete.id}`, '#main-area');
-                break
-            case "heatmaps":
+    switch (navigate_to) {
+        case "settings":
+            clear_main_area()
+            htmx.ajax('GET', `/settings?athlete_id=${athlete.id}`, {
+                target: '#main-area',
+                indicator: '#my-indicator'
+            });
+            break;
+        case "activityFeed":
+            go_to_activity_feed("all")
+            break
+        case "heatmaps":
+            heat_map_afterSettle()
+            htmx.ajax('GET', `/heat/map?athlete_id=${athlete.id}`, {
+                target: '#main-area',
+                indicator: '#my-indicator'
+            });
+            break;
 
-                heat_map_afterSettle()
-
-                htmx.ajax('GET', `/heat/map?athlete_id=${athlete.id}`, '#main-area');
-                break;
-        }
     }
-
 }
 
-function heat_map_afterSettle() {
+const go_to_activity_feed = (sport_type) => {
+    set_nav("activityFeed")
+    clear_main_area()
+    htmx.ajax('GET', `/athlete?athlete_id=${athlete.id}&sport_type=${sport_type}`, {
+        target: '#main-area',
+        indicator: '#my-indicator'
+    });
+}
+
+const activity_details = (activity_id) => {
+    set_nav("activityFeed")
     const main_area = document.getElementById('main-area');
-
-    main_area.addEventListener('htmx:afterSettle', function(evt) {
-        initHeatmap();
-    }, { once: true });
+    main_area.classList.remove("is-visible");
+    main_area.addEventListener('htmx:afterSettle', function (evt) {
+        main_area.classList.add("is-visible")
+        initMap();
+    }, {once: true});
+    htmx.ajax('GET', `/activity?athlete_id=${athlete.id}&activity_id=${activity_id}`, '#main-area');
 }
 
+const heat_map_afterSettle = () => {
+    const main_area = document.getElementById('main-area');
+    main_area.innerHTML = '';
+    main_area.classList.remove("is-visible");
+    main_area.addEventListener('htmx:afterSettle', function (evt) {
+        main_area.classList.add("heatmap-visible")
+        initHeatmap();
+    }, {once: true});
+}
+
+const main_area_afterSettle = () => {
+    document.addEventListener('htmx:afterSettle', (event) => {
+        if (event.detail.successful && event.detail.target.id === 'main-area') {
+            document.getElementById('main-area').classList.add("is-visible")
+        }
+    }, {once: true});
+}
+
+
+const clear_main_area = () => {
+    document.getElementById('main-area').classList.remove("is-visible");
+    document.getElementById('main-area').classList.remove("heatmap-visible")
+    document.getElementById('main-area').innerHTML = '';
+    setTimeout(() => main_area_afterSettle(), 0)
+    // main_area_afterSettle()
+}
 
 const set_nav = (id) => {
     let nav_element = document.getElementById("nav-bar");
-
     for (let element of nav_element.getElementsByTagName("a")) {
         if (id === element.id) {
             element.className = "flex items-center gap-stack-sm px-stack-md py-stack-sm bg-primary-container text-on-primary-container font-bold rounded-lg transition-all font-label-md text-label-md";
@@ -188,7 +185,6 @@ const set_nav = (id) => {
             element.className = "flex items-center gap-stack-sm px-stack-md py-stack-sm text-secondary hover:bg-surface-container-high rounded-lg transition-all font-label-md text-label-md";
         }
     }
-
 
 }
 
@@ -204,18 +200,28 @@ const reGen = (athlete_id, activity_id) => {
     htmx.trigger(element, 'click');
 }
 
-const settings_request = () => {
-    debugger
+
+const save_prompt = () => {
+    const prompt = document.getElementById('settings-prompt').value;
+    htmx.ajax('POST', '/update/prompt', {
+        values: {
+            athlete_id: athlete.id,
+            prompt
+        },
+    });
 }
 
-const toggle_info = () => {
-    const info_overlay_display = document.getElementById('infoOverlay').style.display
-    if (info_overlay_display === 'none') {
-        document.getElementById('infoOverlay').style.display = 'block'
-    } else {
-        document.getElementById('infoOverlay').style.display = 'none'
-    }
+const toggle_auto_update = () => {
+    const auto_update = document.getElementById('auto_update').checked;
+
+    htmx.ajax('POST', '/update/auto', {
+        values: {
+            athlete_id: athlete.id,
+            auto_update
+        },
+    });
 }
+
 
 
 window.onload = () => {

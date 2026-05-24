@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>STRAVA AI - Athlete Selection</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800;900&amp;family=Geist:wght@400;500;600&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-container": "#008379",
+                        "surface-container": "#efeded",
+                        "outline": "#916f66",
+                        "surface-tint": "#ae3100",
+                        "on-primary": "#ffffff",
+                        "surface-dim": "#dbdad9",
+                        "surface-bright": "#fbf9f9",
+                        "secondary": "#5f5e60",
+                        "inverse-on-surface": "#f2f0f0",
+                        "error-container": "#ffdad6",
+                        "on-primary-container": "#fffbff",
+                        "surface-variant": "#e4e2e2",
+                        "on-tertiary-fixed-variant": "#005049",
+                        "on-secondary-fixed": "#1b1b1d",
+                        "secondary-fixed-dim": "#c8c6c8",
+                        "surface-container-highest": "#e4e2e2",
+                        "on-error-container": "#93000a",
+                        "outline-variant": "#e6beb2",
+                        "background": "#fbf9f9",
+                        "on-primary-fixed": "#3a0a00",
+                        "on-background": "#1b1c1c",
+                        "tertiary-fixed": "#61f9e9",
+                        "error": "#ba1a1a",
+                        "primary": "#aa3000",
+                        "on-surface-variant": "#5c4038",
+                        "on-error": "#ffffff",
+                        "primary-fixed": "#ffdbd0",
+                        "primary-container": "#d53e00",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "on-primary-fixed-variant": "#852400",
+                        "inverse-surface": "#303031",
+                        "secondary-container": "#e5e1e4",
+                        "on-tertiary-container": "#f4fffc",
+                        "surface": "#fbf9f9",
+                        "primary-fixed-dim": "#ffb59f",
+                        "on-secondary-fixed-variant": "#474649",
+                        "on-secondary-container": "#656466",
+                        "inverse-primary": "#ffb59f",
+                        "tertiary-fixed-dim": "#3adccc",
+                        "tertiary": "#00685f",
+                        "surface-container-low": "#f5f3f3",
+                        "surface-container-high": "#e9e8e7",
+                        "on-tertiary-fixed": "#00201d",
+                        "surface-container-lowest": "#ffffff",
+                        "on-surface": "#1b1c1c",
+                        "secondary-fixed": "#e5e1e4"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "unit": "4px",
+                        "stack-sm": "8px",
+                        "margin-desktop": "40px",
+                        "container-max": "1280px",
+                        "stack-md": "16px",
+                        "stack-lg": "32px",
+                        "gutter": "24px",
+                        "margin-mobile": "16px"
+                    },
+                    "fontFamily": {
+                        "display": ["Hanken Grotesk"],
+                        "label-sm": ["Geist"],
+                        "headline-lg": ["Hanken Grotesk"],
+                        "data-mono": ["Geist"],
+                        "headline-md": ["Hanken Grotesk"],
+                        "body-md": ["Inter"],
+                        "label-md": ["Geist"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "display": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                        "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                        "data-mono": ["16px", {"lineHeight": "24px", "fontWeight": "500"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.02em", "fontWeight": "500"}],
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #fbf9f9;
+            color: #1b1c1c;
+        }
+    </style>
+    <script>
+        function goToAthlete(athlete_id) {
+            window.location.href = `/activities?athlete_id=${athlete_id}`;
+        }
+        function connectWithStrava() {
+            const hostUrl = window.location.origin;
+            const redirectUri = encodeURIComponent(hostUrl + '/exchange_token');
+            const stravaAuthUrl = `https://www.strava.com/oauth/authorize?client_id={{ strava_client_id }}&response_type=code&redirect_uri=${redirectUri}&approval_prompt=force&scope=activity:read,activity:write`;
+            window.location.href = stravaAuthUrl;
+        }
+    </script>
+</head>
+<body class="font-body-md">
+<!-- TopNavBar -->
+<header class="bg-surface dark:bg-surface border-b border-outline-variant dark:border-outline fixed top-0 left-0 w-full px-margin-desktop py-stack-sm h-16 z-50 flex justify-between items-center">
+    <div class="flex items-center gap-stack-md"> <!-- Adjusted for SideNav width -->
+        <span class="text-headline-md font-display font-extrabold tracking-tighter text-primary dark:text-primary-fixed">STRAVA AI</span>
+    </div>
+    <div class="flex items-center gap-stack-md">
+        <button onclick="connectWithStrava()" class="bg-primary text-on-primary px-stack-md py-stack-sm rounded-lg font-label-md hover:bg-primary-container transition-colors duration-200">
+            Connect to Strava
+        </button>
+    </div>
+</header>
+<!-- SideNavBar -->
+<!-- Main Content Area -->
+<main class="mt-16 p-margin-desktop min-h-screen">
+    <div class="max-w-container-max mx-auto">
+        <header class="mb-stack-lg">
+            <h1 class="text-headline-lg font-headline-lg text-on-surface mb-stack-sm">Select Athlete</h1>
+            <p class="text-body-lg font-body-lg text-on-surface-variant max-w-2xl">Manage and toggle between your connected professional athlete profiles. Access specific performance hubs and data-rich activity feeds for each individual.</p>
+        </header>
+        <!-- Athlete Grid (Bento Style) -->
+        <div class="flex flex-col border border-outline-variant rounded-xl overflow-hidden bg-surface-container-lowest">
+            <!-- Athlete Row 1 -->
+            {% for athlete in athletes %}
+            <div onclick="goToAthlete({{athlete.id}})" class="group bg-surface-container-lowest border-b border-outline-variant py-stack-md px-stack-lg flex items-center justify-between hover:bg-surface-container-low transition-colors duration-200 cursor-pointer">
+                <h3 class="text-headline-md font-display text-on-surface group-hover:text-primary transition-colors"> {{athlete.firstname}} {{athlete.lastname}}</h3>
+            </div>
+            {% endfor %}
+            <!-- Add Athlete Row -->
+            <button onclick="connectWithStrava()" class="group w-full py-stack-md px-stack-lg flex items-center gap-stack-md hover:bg-surface-container-low transition-colors duration-200 text-left">
+                <div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center group-hover:bg-primary group-hover:text-on-primary transition-colors duration-300">
+                    <span class="material-symbols-outlined">person_add</span>
+                </div>
+                <div>
+                    <h3 class="text-label-md font-label-md text-on-surface">Add Athlete</h3>
+                    <p class="text-label-sm font-label-sm text-on-surface-variant">Connect another Strava account</p>
+                </div>
+            </button></div>
+        <!-- Dashboard Insights (Bottom Section) -->
+    </div>
+</main>
+</body></html>

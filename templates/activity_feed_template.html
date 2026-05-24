@@ -5,20 +5,22 @@
 
         <div class="w-full md:w-48">
             <label class="block font-label-sm text-secondary mb-2 uppercase">Type</label>
-            <select class="w-full bg-surface border border-outline-variant rounded-lg py-3 px-4 focus:outline-none focus:border-primary transition-colors font-body-md appearance-none">
-                <option>All Activities</option>
-                <option>Run</option>
-                <option>Ride</option>
-                <option>Swim</option>
+            <select onchange="go_to_activity_feed(event.target.value)"
+                    class="w-full bg-surface border border-outline-variant rounded-lg py-3 px-4 focus:outline-none focus:border-primary transition-colors font-body-md appearance-none">
+                <option {% if sport_type == "all" %}selected{% endif %} value="all">All Activities</option>
+                {% for s_type in sport_types %}
+                <option {% if sport_type == s_type.as_str() %}selected{% endif %} value="{{s_type}}">{{s_type}}</option>
+                {% endfor %}
             </select>
         </div>
 
     </section>
 </header>
-<div class="grid gap-stack-md overflow-y-auto flex-1">
+<div class="h-[calc(100%-112px)] grid gap-stack-md overflow-y-auto flex-1">
     <div id="activity-feed" class="grid gap-stack-md">
         {% for activity in activities %}
-        <div class="group bg-surface-container-lowest border border-outline-variant rounded-xl p-stack-md hover:shadow-lg transition-all duration-300 flex flex-col md:flex-row md:items-center gap-6">
+        <div onclick="activity_details({{activity.id}})"
+             class="group bg-surface-container-lowest border border-outline-variant rounded-xl p-stack-md hover:shadow-lg transition-all duration-300 flex flex-col md:flex-row md:items-center gap-6">
             <div class="w-16 h-16 bg-primary-container text-on-primary-container flex items-center justify-center rounded-xl shrink-0">
                 <!--        <span class="material-symbols-outlined text-4xl"            -->
                 <!--              data-icon="{{activity.sport_type}}">{{activity.sport_type}}</span>-->
@@ -26,6 +28,10 @@
                 <span class="material-symbols-outlined text-4xl" data-icon="directions_run">directions_run</span>
                 {% else if activity.sport_type == "Ride" %}
                 <span class="material-symbols-outlined text-4xl" data-icon="directions_bike">directions_bike</span>
+                {% else if activity.sport_type == "Walk" || activity.sport_type == "Hike" %}
+                <span class="material-symbols-outlined text-4xl" data-icon="directions_walk">directions_walk</span>
+                {% else if activity.sport_type == "Swim" %}
+                <span class="material-symbols-outlined text-4xl" data-icon="Pool">Pool</span>
                 {% else %}
                 <span class="material-symbols-outlined text-4xl" data-icon="fitness_center">fitness_center</span>
                 {% endif %}
@@ -34,8 +40,9 @@
             <div class="flex-1">
                 <div class="flex items-center gap-3 mb-1">
                     <h3 class="font-headline-md text-on-surface"> {{ activity.name }}</h3>
-                    <div>{{ activity.description }}</div>
+
                 </div>
+                <div class="text-sm pb-1 font-light text-slate-500">{{ activity.description }}</div>
                 <p class="text-secondary font-label-md mb-3">{{activity.start_date_local}}</p>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div>

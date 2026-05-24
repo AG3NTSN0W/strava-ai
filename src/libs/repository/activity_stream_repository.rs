@@ -1,4 +1,7 @@
+use crate::libs::StravAIError;
 use crate::libs::models::activity_stream::ActivityStream;
+use serde::Serialize;
+use sqlx::sqlite::SqliteRow;
 use sqlx::{Error, Pool, Row, Sqlite};
 use std::collections::HashMap;
 
@@ -15,6 +18,19 @@ pub struct AltitudeLatLngResults {
 pub struct VelocityLatLngResults {
     pub latlng: Vec<Vec<Vec<f64>>>,
     pub velocity: Vec<Vec<f64>>,
+}
+
+pub struct ActivityStreamResults<T> {
+    pub data: T,
+    pub activity_data: Vec<ActivityDataResults>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ActivityDataResults {
+    pub distance: f32,
+    pub elapsed_time: String,
+    pub total_elevation_gain: f32,
+    pub average_heartrate: i32,
 }
 
 pub struct ActivityStreamRepository;
@@ -83,11 +99,17 @@ impl ActivityStreamRepository {
         sport_types: Option<&[&str]>,
         date_from: Option<&str>,
         date_to: Option<&str>,
-    ) -> Result<Vec<Vec<Vec<f64>>>, Box<dyn std::error::Error + Send + Sync>> {
+    ) -> Result<ActivityStreamResults<Vec<Vec<Vec<f64>>>>, Box<dyn std::error::Error + Send + Sync>>
+    {
         let mut sql = String::from(
-            "SELECT s.data FROM activity_stream s
-             JOIN activity a ON a.id = s.activity_id
-             WHERE a.athlete_id = ? AND s.stream_type = 'latlng'",
+            "SELECT s.data,
+                    ROUND(a.distance, 2) as distance,
+                    a.elapsed_time,
+                    ROUND(a.total_elevation_gain, 2) as total_elevation_gain,
+                    CAST(a.average_heartrate AS INTEGER) as average_heartrate
+                FROM activity_stream s
+                JOIN activity a ON a.id = s.activity_id
+                WHERE a.athlete_id = ? AND s.stream_type = 'latlng'",
         );
 
         if let Some(types) = sport_types {
@@ -121,15 +143,20 @@ impl ActivityStreamRepository {
         }
 
         let rows = query.fetch_all(pool).await?;
-
         let mut result: Vec<Vec<Vec<f64>>> = Vec::new();
+        let mut activity_data: Vec<ActivityDataResults> = Vec::new();
+
         for row in rows {
             let data: String = row.get("data");
             let parsed: Vec<Vec<f64>> = serde_json::from_str(&data)?;
             result.push(parsed);
+            activity_data.push(Self::get_activity_data(&row))
         }
 
-        Ok(result)
+        Ok(ActivityStreamResults {
+            data: result,
+            activity_data,
+        })
     }
 
     pub async fn get_latlng_heart_rate_points_filtered(
@@ -138,9 +165,14 @@ impl ActivityStreamRepository {
         sport_types: Option<&[&str]>,
         date_from: Option<&str>,
         date_to: Option<&str>,
-    ) -> Result<HeartRateLatLngResults, Box<dyn std::error::Error + Send + Sync>> {
+    ) -> Result<ActivityStreamResults<HeartRateLatLngResults>, Box<dyn std::error::Error + Send + Sync>> {
         let mut sql = String::from(
-            "SELECT s.activity_id, s.data, s.stream_type FROM activity_stream s
+            "SELECT s.activity_id, s.data, s.stream_type,
+                    ROUND(a.distance, 2) as distance,
+                    a.elapsed_time,
+                    ROUND(a.total_elevation_gain, 2) as total_elevation_gain,
+                    CAST(a.average_heartrate AS INTEGER) as average_heartrate
+                FROM activity_stream s
              JOIN activity a ON a.id = s.activity_id
              WHERE a.athlete_id = ? AND s.stream_type IN ('latlng', 'heartrate')",
         );
@@ -182,6 +214,8 @@ impl ActivityStreamRepository {
         let mut activity_latlng: HashMap<i64, Vec<Vec<f64>>> = HashMap::new();
         let mut activity_hr: HashMap<i64, Vec<f64>> = HashMap::new();
 
+        let mut activity_data = Vec::new();
+
         for row in rows {
             let activity_id: i64 = row.get("activity_id");
             let stream_type: &str = row.get("stream_type");
@@ -192,7 +226,9 @@ impl ActivityStreamRepository {
             } else if stream_type == "latlng" {
                 let parsed: Vec<Vec<f64>> = serde_json::from_str(&data)?;
                 activity_latlng.insert(activity_id, parsed);
+                activity_data.push(Self::get_activity_data(&row));
             }
+
         }
 
         // Only include activities that have both streams
@@ -206,7 +242,10 @@ impl ActivityStreamRepository {
             }
         }
 
-        Ok(HeartRateLatLngResults { heartrate, latlng })
+        Ok(ActivityStreamResults {
+            data: HeartRateLatLngResults { heartrate, latlng },
+            activity_data
+        })
     }
 
     pub async fn get_latlng_altitude_points_filtered(
@@ -215,9 +254,14 @@ impl ActivityStreamRepository {
         sport_types: Option<&[&str]>,
         date_from: Option<&str>,
         date_to: Option<&str>,
-    ) -> Result<AltitudeLatLngResults, Box<dyn std::error::Error + Send + Sync>> {
+    ) -> Result<ActivityStreamResults<AltitudeLatLngResults>, Box<dyn std::error::Error + Send + Sync>> {
         let mut sql = String::from(
-            "SELECT s.activity_id, s.data, s.stream_type FROM activity_stream s
+            "SELECT s.activity_id, s.data, s.stream_type,
+                    ROUND(a.distance, 2) as distance,
+                    a.elapsed_time,
+                    ROUND(a.total_elevation_gain, 2) as total_elevation_gain,
+                    CAST(a.average_heartrate AS INTEGER) as average_heartrate
+                FROM activity_stream s
              JOIN activity a ON a.id = s.activity_id
              WHERE a.athlete_id = ? AND s.stream_type IN ('latlng', 'altitude')",
         );
@@ -257,6 +301,7 @@ impl ActivityStreamRepository {
 
         let mut activity_latlng: HashMap<i64, Vec<Vec<f64>>> = HashMap::new();
         let mut activity_alt: HashMap<i64, Vec<f64>> = HashMap::new();
+        let mut activity_data = Vec::new();
 
         for row in rows {
             let activity_id: i64 = row.get("activity_id");
@@ -268,7 +313,9 @@ impl ActivityStreamRepository {
             } else if stream_type == "latlng" {
                 let parsed: Vec<Vec<f64>> = serde_json::from_str(&data)?;
                 activity_latlng.insert(activity_id, parsed);
+                activity_data.push(Self::get_activity_data(&row));
             }
+
         }
 
         let mut latlng: Vec<Vec<Vec<f64>>> = Vec::new();
@@ -281,7 +328,10 @@ impl ActivityStreamRepository {
             }
         }
 
-        Ok(AltitudeLatLngResults { altitude, latlng })
+        Ok(ActivityStreamResults {
+            data: AltitudeLatLngResults { altitude, latlng },
+            activity_data
+        })
     }
 
     pub async fn get_latlng_velocity_points_filtered(
@@ -290,9 +340,14 @@ impl ActivityStreamRepository {
         sport_types: Option<&[&str]>,
         date_from: Option<&str>,
         date_to: Option<&str>,
-    ) -> Result<VelocityLatLngResults, Box<dyn std::error::Error + Send + Sync>> {
+    ) -> Result<ActivityStreamResults<VelocityLatLngResults>, Box<dyn std::error::Error + Send + Sync>> {
         let mut sql = String::from(
-            "SELECT s.activity_id, s.data, s.stream_type FROM activity_stream s
+            "SELECT s.activity_id, s.data, s.stream_type,
+                    ROUND(a.distance, 2) as distance,
+                    a.elapsed_time,
+                    ROUND(a.total_elevation_gain, 2) as total_elevation_gain,
+                    CAST(a.average_heartrate AS INTEGER) as average_heartrate
+                FROM activity_stream s
              JOIN activity a ON a.id = s.activity_id
              WHERE a.athlete_id = ? AND s.stream_type IN ('latlng', 'velocity_smooth')",
         );
@@ -332,6 +387,7 @@ impl ActivityStreamRepository {
 
         let mut activity_latlng: HashMap<i64, Vec<Vec<f64>>> = HashMap::new();
         let mut activity_vel: HashMap<i64, Vec<f64>> = HashMap::new();
+        let mut activity_data = Vec::new();
 
         for row in rows {
             let activity_id: i64 = row.get("activity_id");
@@ -343,7 +399,9 @@ impl ActivityStreamRepository {
             } else if stream_type == "latlng" {
                 let parsed: Vec<Vec<f64>> = serde_json::from_str(&data)?;
                 activity_latlng.insert(activity_id, parsed);
+                activity_data.push(Self::get_activity_data(&row));
             }
+
         }
 
         let mut latlng: Vec<Vec<Vec<f64>>> = Vec::new();
@@ -356,6 +414,44 @@ impl ActivityStreamRepository {
             }
         }
 
-        Ok(VelocityLatLngResults { velocity, latlng })
+        Ok(ActivityStreamResults {
+            data: VelocityLatLngResults { velocity, latlng },
+            activity_data
+        })
+    }
+
+    pub async fn get_latlng_points_by_id(
+        pool: &Pool<Sqlite>,
+        athlete_id: i64,
+        activity_id: i64,
+    ) -> Result<Vec<Vec<f64>>, Box<dyn std::error::Error + Send + Sync>> {
+        let sql = String::from(
+            "SELECT s.data FROM activity_stream s
+            JOIN activity a ON a.id = s.activity_id
+             WHERE a.athlete_id = ? AND s.activity_id = ?  AND s.stream_type = 'latlng'",
+        );
+
+        let row = sqlx::query(&sql)
+            .bind(athlete_id)
+            .bind(activity_id)
+            .fetch_optional(pool)
+            .await?;
+
+        match row {
+            None => Err(Box::new(StravAIError("Map data not found".into()))),
+            Some(row) => {
+                let data: String = row.get("data");
+                Ok(serde_json::from_str(&data)?)
+            }
+        }
+    }
+
+    fn get_activity_data(row: &SqliteRow) -> ActivityDataResults {
+        ActivityDataResults {
+            distance: row.get("distance"),
+            elapsed_time: row.get("elapsed_time"),
+            total_elevation_gain: row.get("total_elevation_gain"),
+            average_heartrate: row.get("average_heartrate"),
+        }
     }
 }

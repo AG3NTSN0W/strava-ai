@@ -1,0 +1,147 @@
+<script>
+    pts = {{ map_points | json | safe }};
+    function before_request() {
+        let ai_target = document.getElementById("ai-target");
+        ai_target.style.display = "None";
+        document.getElementById("refresh-button").disabled = true
+        document.getElementById("save-button").disabled = true
+
+        ai_target.addEventListener('htmx:afterSettle', function (evt) {
+            document.getElementById("ai-target").style.display = "block";
+            document.getElementById("refresh-button").disabled = false
+            document.getElementById("save-button").disabled = false
+        }, {once: true});
+    }
+</script>
+
+
+{% match activity %}
+{% when Some(activity) %}
+<div class="mb-5">
+    <div class="flex items-center gap-2 text-primary font-label-md mb-2">
+        <span class="material-symbols-outlined text-[18px]">calendar_today</span>
+        <span>{{activity.start_date_local}}</span>
+    </div>
+    <h1 class="font-display text-display font-black text-on-background leading-none">{{ activity.name }}</h1>
+    <div class="text-sm pt-2 font-light text-slate-500">{{ activity.description }}</div>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-12 gap-gutter h-[calc(100vh-12rem)]">
+    <!-- Primary Visual: Map -->
+    <div class="col-span-12 xl:col-span-8 space-y-gutter">
+        <div class="relative h-[95%] rounded-xl overflow-hidden border border-outline-variant group">
+            <div id="map" class="w-full h-full object-cover"></div>
+            <!-- Stats Overlay -->
+            <div class="z-[999] absolute bottom-6 left-6 flex justify-end gap-4 right-4">
+                <div class="flex flex-col items-center bg-surface backdrop-blur-md p-4 rounded-lg border border-outline-variant shadow-sm">
+                    <div class="text-label-sm text-secondary uppercase">Distance</div>
+                    <div class="font-display text-headline-md font-black text-on-surface">{{activity.distance}}<span
+                            class="text-body-md font-normal">km</span></div>
+                </div>
+                <div class="flex flex-col items-center bg-surface backdrop-blur-md p-4 rounded-lg border border-outline-variant shadow-sm">
+                    <div class="text-label-sm text-secondary uppercase">Elapsed Time</div>
+                    <div class="font-display text-headline-md font-black text-on-surface">{{activity.elapsed_time}}
+                    </div>
+                </div>
+
+                {% match activity.average_heartrate %}
+                {% when Some(data) %}
+                <div class="flex flex-col items-center bg-surface backdrop-blur-md p-4 rounded-lg border border-outline-variant shadow-sm">
+                    <div class="text-label-sm text-secondary uppercase">Avg Heart Rate</div>
+                    <div class="font-display text-headline-md font-black text-on-surface">{{ "{:.0}"|format(data)
+                        }}<span
+                                class="text-body-md font-normal">bpm</span></div>
+                </div>
+                {% when None %}
+                {% endmatch %}
+
+                {% match activity.total_elevation_gain %}
+                {% when Some(data) %}
+                <div class="flex flex-col items-center bg-surface backdrop-blur-md p-4 rounded-lg border border-outline-variant shadow-sm">
+                    <div class="text-label-sm text-secondary uppercase">Elevation</div>
+                    <div class="font-display text-headline-md font-black text-on-surface">{{ data }}<span
+                            class="text-body-md font-normal">m</span></div>
+                </div>
+                {% when None %}
+                {% endmatch %}
+
+
+            </div>
+        </div>
+    </div>
+    <!-- AI Sidebar / Right Column -->
+    <div class="col-span-12 xl:col-span-4 space-y-gutter">
+        <!-- AI Title & Description Generator -->
+        <section class="bg-surface rounded-xl border border-outline-variant p-6 relative overflow-hidden">
+            <div class="flex items-center gap-2 mb-6">
+                <span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">psychology</span>
+                <h3 class="font-display text-headline-md font-bold">AI Narrative Engine</h3>
+            </div>
+            <div class="space-y-6">
+                <!-- AI Prompt Edit -->
+                <div>
+                    <label class="text-label-sm text-secondary uppercase mb-2 block font-bold">System
+                        Instruction</label>
+                    <textarea id="ai-prompt"
+                            class="w-full bg-surface-container-low border border-outline-variant rounded-lg p-3 text-body-md focus:ring-1 focus:ring-primary focus:border-primary min-h-[100px]">{{prompt}}</textarea>
+                </div>
+                <!-- Live Preview -->
+                <div id="ai-target" class="hx-hide-on-request bg-surface-container-highest/50 rounded-lg p-5 border-l-4 border-primary">
+                    <div class="text-label-sm text-primary font-bold uppercase mb-3">Live Preview</div>
+                    <div id="ai-name" class="font-display text-body-lg font-bold text-on-surface mb-2">{{ activity.name }}</div>
+                    <p id="ai-description" class="text-body-md text-secondary leading-relaxed">
+                    {% if activity.description == "" %}
+                    [[No Description For this activity]]
+                    {% else %}
+                    {{activity.description}}
+                    {% endif %}
+                    </p>
+                </div>
+
+                <div id="my-ai-indicator" class="my-ai-indicator">
+                    <div class="flex flex-col  bg-surface-container-highest w-full h-40 animate-pulse rounded-xl p-4 gap-4">
+                        <div class="bg-surface-container-low w-4/5 h-full animate-pulse rounded-md"></div>
+                        <div class="bg-surface-container-low w-full h-full animate-pulse rounded-md"></div>
+                        <div class="bg-surface-container-low w-2/4 h-full animate-pulse rounded-md"></div>
+                    </div>
+                </div>
+                <!-- Action Buttons -->
+                <div class="flex flex-col gap-3">
+                    <button id="refresh-button" class="w-full bg-surface-container-highest hover:bg-surface-container-low text-on-surface py-3 rounded-lg font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:pointer-events-none"
+                            hx-ext="json-enc"
+                            hx-put="/generate"
+                            hx-trigger="click"
+                            hx-indicator="#my-ai-indicator"
+                            hx-vals='js:{"activity_id": {{activity.id}}, prompt: document.getElementById("ai-prompt").value}'
+                            hx-on:htmx:before-request="before_request()">
+                        <span class="material-symbols-outlined text-[20px]">refresh</span>
+                        Regenerate
+                    </button>
+                    <button id="save-button"  class="w-full bg-primary text-on-primary py-3 rounded-lg font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:pointer-events-none"
+                            hx-post="/update/activity" hx-trigger="click" hx-include="#myAiForm" hx-target="#save-activity" hx-disable-elt="this">
+
+                        <div class="save-button-text flex items-center gap-2">
+                            <span class="material-symbols-outlined text-[20px]">upload</span>
+                            <span id="save-activity"> Save to Strava </span>
+                        </div>
+
+                        <div class="my-ai-indicator">
+                            <svg class="mr-3 size-5 animate-spin ..." viewBox="0 0 24 24">
+                            </svg>
+                            Saving…
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+<!-- Spacer for mobile scrolling -->
+<div class="h-16 lg:hidden"></div>
+{% when None %}
+{% endmatch %}
+
+
+
+
+

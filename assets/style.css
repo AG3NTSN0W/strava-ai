@@ -1395,3 +1395,59 @@ select {
         display: block
     }
 }
+
+.my-indicator {
+    display: none;
+    transition: opacity 200ms ease-in;
+    transition-delay: 500ms; /* No delay when hiding */
+}
+
+.htmx-request .my-indicator,
+.htmx-request.my-indicator
+{
+    display: block;
+    transition-delay: 500ms;
+    position: relative;
+    width: 100%;
+    padding: 40px 40px 40px 0;
+}
+
+.my-ai-indicator {
+    display: none;
+}
+
+.htmx-request .my-ai-indicator,
+.htmx-request.my-ai-indicator
+{
+    display: block;
+}
+
+.htmx-request .save-button-text,
+.htmx-request.save-button-text{
+    display: none;
+}
+
+#main-area {
+    display: none;
+}
+
+#main-area.is-visible {
+    display: block;
+    animation: steadyAppear 0.8s ease-out forwards;
+}
+
+#main-area.heatmap-visible {
+    display: block;
+}
+
+@keyframes steadyAppear {
+    0% {
+        opacity: 0;
+    }
+    50% {
+        opacity: 0.5;
+    }
+    100% {
+        opacity: 1;
+    }
+}

@@ -26,10 +26,11 @@
             <label class="block font-label-md text-on-surface-variant mb-unit">Base Behavioral Prompt</label>
             <p class="text-secondary font-body-md mb-stack-md text-sm">Define how the AI should generate your
                 activity titles and descriptions.</p>
-            <textarea
-                    class="w-full h-40 bg-surface-container-low border border-outline rounded-lg p-stack-md font-data-mono text-on-surface focus:ring-2 focus:ring-primary focus:border-primary transition-all resize-none">{{prompt}}</textarea>
+            <textarea id="settings-prompt" name="prompt"
+                      class="w-full h-40 bg-surface-container-low border border-outline rounded-lg p-stack-md font-data-mono text-on-surface focus:ring-2 focus:ring-primary focus:border-primary transition-all resize-none">{{prompt}}</textarea>
             <div class="mt-stack-md flex flex-wrap gap-stack-sm">
-                <button class="px-stack-md py-stack-sm bg-primary text-on-primary rounded-lg font-label-md transition-all active:scale-95 shadow-sm hover:bg-primary-container">
+                <button onclick="save_prompt()"
+                        class="px-stack-md py-stack-sm bg-primary text-on-primary rounded-lg font-label-md transition-all active:scale-95 shadow-sm hover:bg-primary-container disabled:opacity-50 disabled:pointer-events-none">
                     Save Changes
                 </button>
             </div>
@@ -46,14 +47,16 @@
             <div class="flex items-center justify-between bg-surface-container-low p-stack-md rounded-lg border border-outline-variant">
                 <div>
                     <h4 class="font-label-md text-on-surface font-bold">Auto Update</h4>
-                    <p class="text-secondary text-[12px] font-body-md">Automatically generate activity titles and descriptions</p>
+                    <p class="text-secondary text-[12px] font-body-md">Automatically generate activity titles and
+                        descriptions</p>
                 </div>
                 <div class="relative inline-block w-12 align-middle select-none transition duration-200 ease-in">
                     <input {% if auto_update %} checked {% endif %}
                            class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer checked:right-0 right-6 border-outline-variant transition-all duration-300 ease-in-out"
-                           id="toggle" name="toggle" type="checkbox"/>
+                           id="auto_update" name="auto_update" type="checkbox"
+                           onclick="toggle_auto_update()"/>
                     <label class="toggle-label block overflow-hidden h-6 rounded-full bg-surface-container-highest cursor-pointer transition-colors duration-300 ease-in-out"
-                           for="toggle"></label>
+                           for="auto_update"></label>
                 </div>
             </div>
         </div>
@@ -66,8 +69,11 @@
             <h3 class="font-headline-md text-headline-md text-on-surface">Display Preferences</h3>
         </div>
         <div class="p-stack-md grid grid-cols-2 gap-stack-md">
-            <div id="theme-light" onclick="toggleTheme('light')" class="relative cursor-pointer group border-2 border-primary rounded-lg p-stack-sm" style="background-color: #fbf9f9;">
-                <div class="h-20 rounded-md mb-stack-sm flex items-center justify-center overflow-hidden" style="background-color: #f5f3f3;">
+            <div id="theme-light" onclick="toggleTheme('light')"
+                 class="relative cursor-pointer group border-2 border-primary rounded-lg p-stack-sm"
+                 style="background-color: #fbf9f9;">
+                <div class="h-20 rounded-md mb-stack-sm flex items-center justify-center overflow-hidden"
+                     style="background-color: #f5f3f3;">
                     <div class="w-3/4 h-2 rounded-full mb-1" style="background-color: #e6beb2;"></div>
                     <div class="w-1/2 h-2 rounded-full" style="background-color: #e6beb2;"></div>
                 </div>
@@ -77,8 +83,11 @@
                               style="font-variation-settings: 'wght' 700;">check</span>
                 </div>
             </div>
-            <div id="theme-dark" onclick="toggleTheme('dark')" class="relative cursor-pointer group border border-outline-variant rounded-lg p-stack-sm hover:border-primary transition-all" style="background-color: #131313;">
-                <div class="h-20 rounded-md mb-stack-sm flex items-center justify-center overflow-hidden" style="background-color: #201f1f;">
+            <div id="theme-dark" onclick="toggleTheme('dark')"
+                 class="relative cursor-pointer group border border-outline-variant rounded-lg p-stack-sm hover:border-primary transition-all"
+                 style="background-color: #131313;">
+                <div class="h-20 rounded-md mb-stack-sm flex items-center justify-center overflow-hidden"
+                     style="background-color: #201f1f;">
                     <div class="w-3/4 h-2 rounded-full mb-1" style="background-color: #5c4038;"></div>
                     <div class="w-1/2 h-2 rounded-full" style="background-color: #5c4038;"></div>
                 </div>
@@ -116,7 +125,7 @@
             }
 
             // Initialize card state based on saved theme
-            (function() {
+            (function () {
                 const saved = localStorage.getItem('selectedTheme') || 'light';
                 if (saved === 'dark') toggleTheme('dark');
             })();

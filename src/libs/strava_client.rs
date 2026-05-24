@@ -1,14 +1,47 @@
 use crate::AppState;
-use crate::libs::StravAIError;
 use crate::libs::models::strava::activity::Activity;
 use crate::libs::models::strava::stream::StreamResponse;
 use crate::libs::models::strava::token::{RefreshToken, Token};
 use crate::libs::models::strava::update_activity::UpdateActivity;
 use chrono::Utc;
 use log::{debug, error};
+use reqwest::StatusCode;
+use thiserror::Error;
 
 const STRAVA_BASE_URL: &str = "https://www.strava.com/api/v3";
 const STRAVA_AUTH_URL: &str = "https://www.strava.com/oauth/token";
+
+#[derive(Error, Debug)]
+pub enum StravaClientError {
+    #[error("Invalid header (expected {expected:?}, got {found:?})")]
+    InvalidHeader { expected: String, found: String },
+    #[error("Missing attribute: {0}")]
+    MissingAttribute(String),
+
+    #[error("Strava API error {context}: HTTP status {status_code}")]
+    UnknowError {
+        context: String,
+        status_code: StatusCode,
+    },
+
+    #[error("Unauthorized: Client {0}")]
+    UNAUTHORIZED(i64),
+
+    #[error("network request failed: {0}")]
+    Network(#[from] reqwest::Error),
+
+    #[error("Strava authorization error: HTTP status {status_code}, Content: {context}")]
+    FailedToAuthorized {
+        context: String,
+        status_code: StatusCode,
+    },
+
+    #[error("Strava token refresh error: HTTP status {status_code}, Content: {context}")]
+    FailedToRefreshToken {
+        context: String,
+        status_code: StatusCode,
+    },
+}
 
 #[derive(Debug)]
 pub struct StravaClient {}
@@ -25,31 +58,38 @@ impl StravaClient {
         response: reqwest::Response,
         context: &str,
         app_state: &AppState,
-    ) -> Result<reqwest::Response, Box<dyn std::error::Error + Send + Sync>> {
+        athlete_id: i64,
+    ) -> Result<reqwest::Response, StravaClientError> {
         app_state.update_rate_limit(&response).await;
-
+        let status_code = response.status();
         if response.status().is_success() {
             return Ok(response);
         }
-        let status = response.status();
-        let body = response.text().await.unwrap_or_default();
-        error!("Strava API error [{context}]: {status} - {body}");
-        Err(Box::new(StravAIError(format!(
-            "{context}: HTTP {status} - {body}"
-        ))))
+
+        if status_code == StatusCode::UNAUTHORIZED {
+            app_state.invalidate_access_token(athlete_id).await;
+            return Err(StravaClientError::UNAUTHORIZED(athlete_id));
+        }
+
+        Err(StravaClientError::UnknowError {
+            status_code,
+            context: context.to_owned(),
+        })
     }
 
     pub async fn get_activities(
         access_token: &str,
         after: i64,
         app_state: &AppState,
-    ) -> Result<Vec<Activity>, Box<dyn std::error::Error + Send + Sync>> {
+        athlete_id: i64,
+    ) -> Result<Vec<Activity>, StravaClientError> {
         debug!("Fetching activities after timestamp: {after}");
         let client = reqwest::Client::new();
         let url = format!("{STRAVA_BASE_URL}/athlete/activities?after={after}");
 
         let response = client.get(&url).bearer_auth(access_token).send().await?;
-        let response = Self::check_response(response, "get_activities", app_state).await?;
+        let response =
+            Self::check_response(response, "get_activities", app_state, athlete_id).await?;
 
         let activities = response.json::<Vec<Activity>>().await?;
         Ok(activities)
@@ -58,22 +98,25 @@ impl StravaClient {
     pub async fn get_activities_for_today(
         access_token: &str,
         app_state: &AppState,
-    ) -> Result<Vec<Activity>, Box<dyn std::error::Error + Send + Sync>> {
+        athlete_id: i64,
+    ) -> Result<Vec<Activity>, StravaClientError> {
         let after = Self::get_today_timestamp();
-        Self::get_activities(access_token, after, app_state).await
+        Self::get_activities(access_token, after, app_state, athlete_id).await
     }
 
     pub async fn get_all_activities(
         access_token: &str,
         app_state: &AppState,
-    ) -> Result<Vec<Activity>, Box<dyn std::error::Error + Send + Sync>> {
+        athlete_id: i64,
+    ) -> Result<Vec<Activity>, StravaClientError> {
         debug!("Fetching all activities");
         let per_page = 100;
         let client = reqwest::Client::new();
         let url = format!("{STRAVA_BASE_URL}/athlete/activities?per_page={per_page}");
 
         let response = client.get(&url).bearer_auth(access_token).send().await?;
-        let response = Self::check_response(response, "get_all_activities", app_state).await?;
+        let response =
+            Self::check_response(response, "get_all_activities", app_state, athlete_id).await?;
 
         let activities = response.json::<Vec<Activity>>().await?;
         Ok(activities)
@@ -83,7 +126,7 @@ impl StravaClient {
         client_id: i32,
         client_secret: &str,
         code: &str,
-    ) -> Result<Token, Box<dyn std::error::Error + Send + Sync>> {
+    ) -> Result<Token, StravaClientError> {
         debug!("Exchanging authorization code for token for client_id: {client_id}");
         let client = reqwest::Client::new();
         let url = format!(
@@ -92,12 +135,12 @@ impl StravaClient {
 
         let response = client.post(&url).send().await?;
         if !response.status().is_success() {
-            let status = response.status();
-            let body = response.text().await.unwrap_or_default();
-            error!("Strava API error [exchange_authorization_code]: {status} - {body}");
-            return Err(Box::new(StravAIError(format!(
-                "exchange_authorization_code: HTTP {status} - {body}"
-            ))));
+            let status_code = response.status();
+            let context = response.text().await.unwrap_or_default();
+            return Err(StravaClientError::FailedToAuthorized {
+                status_code,
+                context,
+            });
         }
 
         let token_response = response.json::<Token>().await?;
@@ -108,7 +151,7 @@ impl StravaClient {
         client_id: i32,
         client_secret: &str,
         refresh_token: &str,
-    ) -> Result<RefreshToken, Box<dyn std::error::Error + Send + Sync>> {
+    ) -> Result<RefreshToken, StravaClientError> {
         debug!("Refreshing token for client_id: {client_id}");
         let client = reqwest::Client::new();
         let url = format!(
@@ -117,12 +160,12 @@ impl StravaClient {
 
         let response = client.post(&url).send().await?;
         if !response.status().is_success() {
-            let status = response.status();
-            let body = response.text().await.unwrap_or_default();
-            error!("Strava API error [refresh_token]: {status} - {body}");
-            return Err(Box::new(StravAIError(format!(
-                "refresh_token: HTTP {status} - {body}"
-            ))));
+            let status_code = response.status();
+            let context = response.text().await.unwrap_or_default();
+            return Err(StravaClientError::FailedToRefreshToken {
+                status_code,
+                context,
+            });
         }
 
         let token_response = response.json::<RefreshToken>().await?;
@@ -134,7 +177,8 @@ impl StravaClient {
         activity_id: u64,
         update: &UpdateActivity,
         app_state: &AppState,
-    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        athlete_id: i64,
+    ) -> Result<(), StravaClientError> {
         debug!("Updating activity: {activity_id}. Update: {update:?}");
         let client = reqwest::Client::new();
         let url = format!("{STRAVA_BASE_URL}/activities/{activity_id}");
@@ -146,7 +190,13 @@ impl StravaClient {
             .send()
             .await?;
 
-        Self::check_response(response, &format!("update_activity {activity_id}"), app_state).await?;
+        Self::check_response(
+            response,
+            &format!("update_activity {activity_id}"),
+            app_state,
+            athlete_id,
+        )
+        .await?;
         Ok(())
     }
 
@@ -154,7 +204,8 @@ impl StravaClient {
         access_token: &str,
         activity_id: i64,
         app_state: &AppState,
-    ) -> Result<Vec<StreamResponse>, Box<dyn std::error::Error + Send + Sync>> {
+        athlete_id: i64,
+    ) -> Result<Vec<StreamResponse>, StravaClientError> {
         debug!("Fetching streams for activity: {activity_id}");
         let client = reqwest::Client::new();
         let url = format!(
@@ -162,8 +213,13 @@ impl StravaClient {
         );
 
         let response = client.get(&url).bearer_auth(access_token).send().await?;
-        let response =
-            Self::check_response(response, &format!("get_activity_streams {activity_id}"), app_state).await?;
+        let response = Self::check_response(
+            response,
+            &format!("get_activity_streams {activity_id}"),
+            app_state,
+            athlete_id,
+        )
+        .await?;
 
         let streams = response.json::<Vec<StreamResponse>>().await?;
         Ok(streams)

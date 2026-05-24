@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html class="light" lang="en" style="">
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>STRAVA AI</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;family=Geist:wght@400;500;600;700&amp;display=swap"
+          rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+          rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+          rel="stylesheet">
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-fixed": "#1b1b1d",
+                        "primary-container": "#d53e00",
+                        "on-primary-fixed": "#3a0a00",
+                        "on-secondary": "#ffffff",
+                        "error": "#ba1a1a",
+                        "on-error": "#ffffff",
+                        "surface-container": "#efeded",
+                        "surface-variant": "#e4e2e2",
+                        "secondary-fixed": "#e5e1e4",
+                        "surface-container-low": "#f5f3f3",
+                        "inverse-primary": "#ffb59f",
+                        "on-primary-container": "#fffbff",
+                        "inverse-on-surface": "#f2f0f0",
+                        "tertiary-fixed-dim": "#3adccc",
+                        "on-tertiary-container": "#f4fffc",
+                        "surface": "#fbf9f9",
+                        "outline": "#916f66",
+                        "secondary-container": "#e5e1e4",
+                        "on-secondary-fixed-variant": "#474649",
+                        "error-container": "#ffdad6",
+                        "primary-fixed": "#ffdbd0",
+                        "surface-dim": "#dbdad9",
+                        "on-surface-variant": "#5c4038",
+                        "outline-variant": "#e6beb2",
+                        "on-error-container": "#93000a",
+                        "on-secondary-container": "#656466",
+                        "surface-container-lowest": "#ffffff",
+                        "on-surface": "#1b1c1c",
+                        "on-primary-fixed-variant": "#852400",
+                        "surface-container-highest": "#e4e2e2",
+                        "primary-fixed-dim": "#ffb59f",
+                        "tertiary-container": "#008379",
+                        "tertiary": "#00685f",
+                        "surface-container-high": "#e9e8e7",
+                        "on-background": "#1b1c1c",
+                        "tertiary-fixed": "#61f9e9",
+                        "on-tertiary": "#ffffff",
+                        "background": "#fbf9f9",
+                        "on-primary": "#ffffff",
+                        "inverse-surface": "#303031",
+                        "surface-tint": "#ae3100",
+                        "on-tertiary-fixed-variant": "#005049",
+                        "on-tertiary-fixed": "#00201d",
+                        "primary": "#aa3000",
+                        "secondary": "#5f5e60",
+                        "surface-bright": "#fbf9f9",
+                        "secondary-fixed-dim": "#c8c6c8"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-sm": "8px",
+                        "margin-mobile": "16px",
+                        "gutter": "24px",
+                        "container-max": "1280px",
+                        "stack-lg": "32px",
+                        "stack-md": "16px",
+                        "unit": "4px",
+                        "margin-desktop": "40px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Hanken Grotesk"],
+                        "body-md": ["Inter"],
+                        "display": ["Hanken Grotesk"],
+                        "data-mono": ["Geist"],
+                        "label-md": ["Geist"],
+                        "body-lg": ["Inter"],
+                        "label-sm": ["Geist"],
+                        "headline-md": ["Hanken Grotesk"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["32px", {
+                            "lineHeight": "40px",
+                            "letterSpacing": "-0.01em",
+                            "fontWeight": "700"
+                        }],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "display": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                        "data-mono": ["16px", {"lineHeight": "24px", "fontWeight": "500"}],
+                        "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.02em", "fontWeight": "500"}],
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                        "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        .hero-overlay {
+            background: linear-gradient(to bottom, rgba(251, 249, 249, 0.7) 0%, rgba(251, 249, 249, 0.95) 100%);
+        }
+    </style>
+    <script>
+        function connectWithStrava() {
+            const hostUrl = window.location.origin;
+            const redirectUri = encodeURIComponent(hostUrl + '/exchange_token');
+            const stravaAuthUrl = `https://www.strava.com/oauth/authorize?client_id={{ strava_client_id }}&response_type=code&redirect_uri=${redirectUri}&approval_prompt=force&scope=activity:read,activity:write`;
+            window.location.href = stravaAuthUrl;
+        }
+    </script>
+</head>
+<body class="bg-surface text-on-surface font-body-md antialiased">
+<!-- TopNavBar (Shared Component) -->
+<header class="bg-surface dark:bg-surface border-b border-surface-container-highest dark:border-surface-container-highest fixed top-0 left-0 right-0 z-50">
+    <nav class="flex justify-between items-center w-full px-margin-desktop py-base max-w-[1200px] mx-auto py-4">
+        <div class="text-headline-md font-headline-md font-bold text-primary dark:text-primary tracking-tight">
+            STRAVA AI
+        </div>
+        <div class="hidden md:flex items-center gap-8">
+
+        </div>
+        <button onclick="connectWithStrava()"
+                class="bg-primary-container text-on-primary-container px-6 py-2 rounded-lg font-label-md text-label-md font-bold hover:opacity-90 active:scale-95 transition-all shadow-sm">
+            Connect to Strava
+        </button>
+    </nav>
+</header>
+<main class="relative min-h-screen pt-20 flex flex-col items-center">
+    <!-- Hero Background -->
+    <div class="absolute inset-0 z-0">
+        <img alt="High Performance Athlete" class="w-full h-full object-cover"
+             data-alt="A professional cyclist leaning into a sharp mountain curve at sunrise. The lighting is cinematic with golden hour warmth hitting the high-tech carbon fiber bike frame. The background shows blurred alpine peaks under a clear sky. The overall aesthetic is high-octane, disciplined, and precision-engineered, maintaining a premium light-mode corporate feeling."
+             src="https://lh3.googleusercontent.com/aida-public/AB6AXuCwlhlgu4r1Lquff8HQs0NNc4rgmNyDA_LU0h_cfkyMO6tzxyMfJMLYQSi2GxAyOl4hn-MNQ1fHI9CoHkH8eEpLatjmDyHq0Nv262uyWAf2fX9FdQbf9Gni_vsiLS3SqVkYHPhXmwat0EgFw05-gV6RTgCH4GblWrba1ChYv-_PMCMFbIoJAqJH6ruOeTQSU03KVhPsQGd4SJxy2OslMRRIaui8Ta7VAabdg97xwWjogilRZ1mnxnIvXTSnmSOOrWhlLlFSznsKWWPP">
+        <div class="absolute inset-0 hero-overlay"></div>
+    </div>
+    <!-- Hero Content Section -->
+    <section class="relative z-10 max-w-[1200px] px-margin-desktop w-full pt-24 pb-32 text-center">
+        <div class="max-w-3xl mx-auto space-y-8">
+
+            <h1 class="font-display text-display text-on-surface leading-tight">
+                Unlock Your <span class="text-primary">Performance Insights</span>
+            </h1>
+            <p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mx-auto">Integrate your Strava profile
+                to activate our proprietary AI engine. Instantly generate professional titles and detailed activity
+                descriptions while transforming raw data into high-performance heatmaps.</p>
+            <div class="pt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+                <button onclick="connectWithStrava()"
+                        class="bg-primary-container text-on-primary-container px-10 py-5 rounded-xl font-headline-md text-headline-md font-bold shadow-lg hover:shadow-xl active:scale-95 transition-all flex items-center gap-3">
+                    <span class="material-symbols-outlined"
+                          style="font-variation-settings: &quot;FILL&quot; 1;">bolt</span>
+                    Connect with Strava
+                </button>
+            </div>
+
+        </div>
+        <!-- Bento Preview Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-6 mt-24">
+            <!-- Activity Feed Card -->
+            <div class="md:col-span-7 bg-surface-container-lowest border border-surface-container-highest rounded-xl p-8 text-left shadow-sm">
+                <div class="flex justify-between items-start mb-10">
+                    <div>
+                        <h3 class="font-headline-md text-headline-md text-on-surface">Activity Feed</h3>
+                        <p class="font-label-md text-label-md text-on-surface-variant">AI-Enhanced Chronological
+                            Analysis</p>
+                    </div>
+                    <span class="material-symbols-outlined text-primary text-3xl" data-icon="timeline">timeline</span>
+                </div>
+                <div class="space-y-4 opacity-50">
+                    <div class="h-16 border-b border-surface-container flex items-center justify-between">
+                        <div class="flex gap-4 items-center">
+                            <div class="w-10 h-10 rounded bg-surface-container"></div>
+                            <div class="space-y-1">
+                                <div class="h-3 w-32 bg-surface-container rounded"></div>
+                                <div class="h-2 w-20 bg-surface-container-high rounded"></div>
+                            </div>
+                        </div>
+                        <div class="h-4 w-12 bg-surface-container rounded"></div>
+                    </div>
+                    <div class="h-16 border-b border-surface-container flex items-center justify-between">
+                        <div class="flex gap-4 items-center">
+                            <div class="w-10 h-10 rounded bg-surface-container"></div>
+                            <div class="space-y-1">
+                                <div class="h-3 w-40 bg-surface-container rounded"></div>
+                                <div class="h-2 w-24 bg-surface-container-high rounded"></div>
+                            </div>
+                        </div>
+                        <div class="h-4 w-12 bg-surface-container rounded"></div>
+                    </div>
+                    <div class="h-16 flex items-center justify-between">
+                        <div class="flex gap-4 items-center">
+                            <div class="w-10 h-10 rounded bg-surface-container"></div>
+                            <div class="space-y-1">
+                                <div class="h-3 w-28 bg-surface-container rounded"></div>
+                                <div class="h-2 w-16 bg-surface-container-high rounded"></div>
+                            </div>
+                        </div>
+                        <div class="h-4 w-12 bg-surface-container rounded"></div>
+                    </div>
+                </div>
+
+            </div>
+            <!-- Global Heatmap Card -->
+            <div class="md:col-span-5 bg-surface-container-lowest border border-surface-container-highest rounded-xl p-8 text-left shadow-sm flex flex-col justify-between">
+                <div>
+                    <div class="flex justify-between items-start mb-6">
+                        <div>
+                            <h3 class="font-headline-md text-headline-md text-on-surface">Global Heatmaps</h3>
+                            <p class="font-label-md text-label-md text-on-surface-variant">Precision Territory
+                                Mapping</p>
+                        </div>
+                        <span class="material-symbols-outlined text-primary text-3xl" data-icon="map">map</span>
+                    </div>
+                    <div class="relative w-full aspect-square bg-surface-container-low rounded-lg overflow-hidden border border-surface-container-high">
+                        <div class="absolute inset-0 flex items-center justify-center opacity-30 mix-blend-multiply">
+                            <span class="material-symbols-outlined text-9xl text-on-surface-variant">map</span>
+                        </div>
+                        <!-- Subtle "Pulse" effect on a fake map -->
+                        <div class="absolute top-1/4 left-1/3 w-20 h-20 bg-primary/10 rounded-full blur-xl"></div>
+                        <div class="absolute bottom-1/3 right-1/4 w-32 h-32 bg-primary/5 rounded-full blur-2xl"></div>
+                        <div class="absolute inset-0 flex flex-col items-center justify-center text-center p-6">
+                            <div class="w-12 h-12 rounded-full bg-white shadow-md flex items-center justify-center mb-3">
+                                <span class="material-symbols-outlined text-primary">location_on</span>
+                            </div>
+                            <p class="text-label-sm font-label-sm font-bold text-on-surface-variant tracking-wider uppercase">
+                                Connect Strava<br>to view your routes</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+</body>
+</html>

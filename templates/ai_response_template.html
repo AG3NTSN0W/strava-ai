@@ -1,0 +1,18 @@
+<span class="material-symbols-outlined text-[20px]">refresh</span>
+Regenerate
+
+<p hx-swap-oob="true" id="ai-description" class="text-body-md text-secondary leading-relaxed">
+    {{ description }}
+</p>
+
+<div hx-swap-oob="true" id="ai-name" class="font-display text-body-lg font-bold text-on-surface mb-2">{{ title }}</div>
+
+<form id="myAiForm" style="display: none">
+    <input type="text" name="athlete_id" value="{{ athlete_id }}">
+    <input type="text" name="activity_id" value="{{ activity_id }}">
+    <input type="text" name="description" value=" {{ description }}">
+    <input type="text" name="name" value=" {{ title }}">
+</form>
+
+
+

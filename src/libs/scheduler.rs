@@ -89,11 +89,11 @@ async fn add_activities_to_db(
     athlete_id: i64,
     access_token: &str,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let activities: Vec<Activity> = StravaClient::get_activities_for_today(access_token, app_state).await?;
+    let activities: Vec<Activity> = StravaClient::get_activities_for_today(access_token, app_state, athlete_id).await?;
     for activity in activities {
         let name = activity.name.to_string();
         update_activities_table(app_state, athlete_id, &activity, &name, "").await?;
-        fetch_and_save_streams(app_state, access_token, activity.id).await?;
+        fetch_and_save_streams(app_state, access_token, activity.id, athlete_id).await?;
     }
     Ok(())
 }
@@ -140,7 +140,7 @@ async fn generate_summaries(
     app_state: &AppState,
     prompt: String,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let activities: Vec<Activity> = StravaClient::get_activities_for_today(access_token, app_state).await?;
+    let activities: Vec<Activity> = StravaClient::get_activities_for_today(access_token, app_state, athlete_id).await?;
     for activity in activities {
         if ActivityRepository::exists(&app_state.db_pools, activity.id).await? {
             continue;
@@ -171,12 +171,13 @@ async fn generate_summaries(
                 gear_id: None,
             },
             app_state,
+            athlete_id
         )
         .await?;
 
         info!("Activity updated. athlete_id: {athlete_id}, Activity Id: {}", activity.id);
 
-        fetch_and_save_streams(app_state, access_token, activity.id).await?;
+        fetch_and_save_streams(app_state, access_token, activity.id, athlete_id).await?;
     }
 
     Ok(())
@@ -186,13 +187,14 @@ async fn fetch_and_save_streams(
     app_state: &AppState,
     access_token: &str,
     activity_id: i64,
+    athlete_id: i64,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let existing = ActivityStreamRepository::get_by_activity_id(&app_state.db_pools, activity_id).await?;
     if !existing.is_empty() {
         return Ok(());
     }
 
-    let streams = StravaClient::get_activity_streams(access_token, activity_id, app_state).await?;
+    let streams = StravaClient::get_activity_streams(access_token, activity_id, app_state, athlete_id).await?;
 
     for stream in streams {
         let activity_stream = ActivityStream {

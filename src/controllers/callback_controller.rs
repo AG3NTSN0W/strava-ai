@@ -38,6 +38,18 @@ pub struct UpdateSettingsRequest {
     pub auto_update: Option<bool>,
 }
 
+#[derive(Debug, Clone, Deserialize)]
+pub struct UpdateAutoUpdateRequest {
+    pub athlete_id: i64,
+    pub auto_update: Option<bool>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct UpdatePromptRequest {
+    pub athlete_id: i64,
+    pub prompt: String,
+}
+
 #[derive(Debug, Deserialize)]
 pub struct BackfillStreamsQuery {
     pub athlete_id: i64,
@@ -71,7 +83,11 @@ pub async fn exchange_token(
         Ok(t) => t,
         Err(e) => {
             error!("Failed to exchange token: {e}");
-            return (StatusCode::INTERNAL_SERVER_ERROR, "Failed to exchange token.").into_response();
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to exchange token.",
+            )
+                .into_response();
         }
     };
 
@@ -128,8 +144,14 @@ pub async fn update_activity(
         ..Default::default()
     };
 
-    if let Err(e) =
-        StravaClient::update_activity(&access_token, update.activity_id, &strava_update, &app_state).await
+    if let Err(e) = StravaClient::update_activity(
+        &access_token,
+        update.activity_id,
+        &strava_update,
+        &app_state,
+        update.athlete_id
+    )
+    .await
     {
         error!("Failed to update activity on Strava: {e}");
         return (
@@ -156,7 +178,7 @@ pub async fn update_activity(
     }
 
     info!("Activity updated: {}", update.activity_id);
-    (StatusCode::OK, "").into_response()
+    (StatusCode::OK, "Saved successfully!").into_response()
 }
 
 pub async fn update_settings(
@@ -164,7 +186,10 @@ pub async fn update_settings(
     Form(update): Form<UpdateSettingsRequest>,
 ) -> impl IntoResponse {
     let auto_update = update.auto_update.unwrap_or(false);
-    debug!("Update settings for athlete {}: auto_update={auto_update}", update.athlete_id);
+    debug!(
+        "Update settings for athlete {}: auto_update={auto_update}",
+        update.athlete_id
+    );
 
     match AthleteRepository::update_settings(
         &app_state.db_pools,
@@ -174,10 +199,60 @@ pub async fn update_settings(
     )
     .await
     {
-        Ok(_) => (StatusCode::OK, "Update was successful").into_response(),
+        Ok(_) => (StatusCode::NO_CONTENT, "Update was successful").into_response(),
         Err(e) => {
             error!("Failed to update settings: {e}");
-            (StatusCode::INTERNAL_SERVER_ERROR, "Unable to update settings").into_response()
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Unable to update settings",
+            )
+                .into_response()
+        }
+    }
+}
+
+pub async fn update_auto_update(
+    State(app_state): State<Arc<AppState>>,
+    Form(update): Form<UpdateAutoUpdateRequest>,
+) -> impl IntoResponse {
+    let auto_update = update.auto_update.unwrap_or(false);
+    debug!(
+        "Update settings for athlete {}: auto_update={auto_update}",
+        update.athlete_id
+    );
+
+    match AthleteRepository::update_auto_update(&app_state.db_pools, update.athlete_id, auto_update)
+        .await
+    {
+        Ok(_) => (StatusCode::NO_CONTENT, "Update was successful").into_response(),
+        Err(e) => {
+            error!("Failed to update settings: {e}");
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Unable to update settings",
+            )
+                .into_response()
+        }
+    }
+}
+
+pub async fn update_prompt(
+    State(app_state): State<Arc<AppState>>,
+    Form(update): Form<UpdatePromptRequest>,
+) -> impl IntoResponse {
+    debug!("Update prompt for athlete {}", update.athlete_id);
+
+    match AthleteRepository::update_prompt(&app_state.db_pools, update.athlete_id, &update.prompt)
+        .await
+    {
+        Ok(_) => (StatusCode::NO_CONTENT, "Update was successful").into_response(),
+        Err(e) => {
+            error!("Failed to update settings: {e}");
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Unable to update settings",
+            )
+                .into_response()
         }
     }
 }
@@ -205,12 +280,19 @@ pub async fn backfill_streams(
             .unwrap_or_default();
 
     let count = activities.len();
-    info!("Backfilling streams for {count} activities for athlete {}", params.athlete_id);
+    info!(
+        "Backfilling streams for {count} activities for athlete {}",
+        params.athlete_id
+    );
 
     let activity_ids: Vec<i64> = activities.into_iter().map(|a| a.id).collect();
-    spawn_stream_fetch((*app_state).clone(), access_token, activity_ids);
+    spawn_stream_fetch((*app_state).clone(), access_token, activity_ids, params.athlete_id);
 
-    (StatusCode::OK, format!("Backfilling streams for {count} activities")).into_response()
+    (
+        StatusCode::OK,
+        format!("Backfilling streams for {count} activities"),
+    )
+        .into_response()
 }
 
 // --- Helpers ---
@@ -244,14 +326,17 @@ async fn get_athlete(pool: &Pool<Sqlite>, athlete_id: i64) -> Result<Athlete, Re
 }
 
 async fn import_activities(app_state: &AppState, athlete_id: i64, access_token: &str) {
-    let activities = StravaClient::get_all_activities(access_token, app_state)
+    let activities = StravaClient::get_all_activities(access_token, app_state, athlete_id)
         .await
         .unwrap_or_else(|e| {
             error!("Failed to fetch activities for athlete {athlete_id}: {e}");
             vec![]
         });
 
-    debug!("Importing {} activities for athlete {athlete_id}", activities.len());
+    debug!(
+        "Importing {} activities for athlete {athlete_id}",
+        activities.len()
+    );
 
     let mut new_activity_ids = Vec::new();
 
@@ -275,14 +360,30 @@ async fn import_activities(app_state: &AppState, athlete_id: i64, access_token: 
     }
 
     if !new_activity_ids.is_empty() {
-        spawn_stream_fetch(app_state.clone(), access_token.to_string(), new_activity_ids);
+        spawn_stream_fetch(
+            app_state.clone(),
+            access_token.to_string(),
+            new_activity_ids,
+            athlete_id,
+        );
     }
 }
 
-fn spawn_stream_fetch(app_state: AppState, access_token: String, activity_ids: Vec<i64>) {
+fn spawn_stream_fetch(
+    app_state: AppState,
+    access_token: String,
+    activity_ids: Vec<i64>,
+    athlete_id: i64,
+) {
     tokio::spawn(async move {
         for activity_id in activity_ids {
-            let streams = match StravaClient::get_activity_streams(&access_token, activity_id, &app_state).await
+            let streams = match StravaClient::get_activity_streams(
+                &access_token,
+                activity_id,
+                &app_state,
+                athlete_id,
+            )
+            .await
             {
                 Ok(s) => s,
                 Err(e) => {
@@ -301,7 +402,9 @@ fn spawn_stream_fetch(app_state: AppState, access_token: String, activity_ids: V
                     original_size: stream.original_size,
                     resolution: stream.resolution,
                 };
-                if let Err(e) = ActivityStreamRepository::create(&app_state.db_pools, &activity_stream).await {
+                if let Err(e) =
+                    ActivityStreamRepository::create(&app_state.db_pools, &activity_stream).await
+                {
                     error!("Failed to save stream for activity {activity_id}: {e}");
                 }
             }

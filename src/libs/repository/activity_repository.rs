@@ -81,6 +81,23 @@ impl ActivityRepository {
         .await
     }
 
+    pub async fn get_by_athlete_id_and_sport_type(
+        pool: &Pool<Sqlite>,
+        athlete_id: i64,
+        sport_type: &str,
+    ) -> Result<Vec<AthleteActivity>, Error> {
+        sqlx::query_as::<_, AthleteActivity>(
+            "SELECT id, athlete_id, name, description, distance, moving_time, elapsed_time, total_elevation_gain,
+                    activity_type, sport_type, start_date_local, achievement_count,
+                    average_speed, max_speed, average_watts, kilojoules, average_heartrate,
+                    max_heartrate, elev_high, elev_low, pr_count FROM activity WHERE athlete_id = ? AND sport_type = ? ORDER BY start_date_local DESC"
+        )
+            .bind(athlete_id)
+            .bind(sport_type)
+            .fetch_all(pool)
+            .await
+    }
+
     /// Update an existing activity
     pub async fn update(pool: &Pool<Sqlite>, activity: &AthleteActivity) -> Result<(), Error> {
         sqlx::query(

@@ -88,6 +88,19 @@ impl AthleteRepository {
         Ok(())
     }
 
+    pub async fn update_prompt(
+        pool: &Pool<Sqlite>,
+        athlete_id: i64,
+        prompt: &str,
+    ) -> Result<(), Error> {
+        sqlx::query("UPDATE athlete SET prompt = ? WHERE id = ?")
+            .bind(prompt)
+            .bind(athlete_id)
+            .execute(pool)
+            .await?;
+        Ok(())
+    }
+
     /// Delete an athlete by ID
     pub async fn delete(pool: &Pool<Sqlite>, id: i64) -> Result<(), Error> {
         sqlx::query("DELETE FROM athlete WHERE id = ?")

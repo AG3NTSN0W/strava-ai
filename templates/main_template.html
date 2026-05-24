@@ -14,13 +14,12 @@
           rel="stylesheet">
     <link href="/assets/style.css" rel="stylesheet"/>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-    <link rel="stylesheet" href="/assets/heatmap.css"/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/leaflet-hotline@0.4.0/dist/leaflet.hotline.min.js"></script>
     <script src="/assets/heatmap.js"></script>
     <script>
         const STRAVA_CLIENT_ID = '{{ strava_client_id }}';
-        const ATHLETES = {{ athletes | json | safe }};
+        const athlete = {{ athlete | json | safe }};
     </script>
     <script src="/assets/script.js" defer></script>
 
@@ -32,7 +31,8 @@
         <span class="font-display text-headline-lg font-black text-primary uppercase tracking-tighter">STRAVA AI</span>
     </div>
     <div class="flex items-center gap-stack-md">
-        <button class="bg-primary text-on-primary px-6 py-2 rounded-full font-label-md hover:scale-95 duration-150 ease-in-out">
+        <button onclick="connectWithStrava()"
+                class="bg-primary text-on-primary px-6 py-2 rounded-full font-label-md hover:scale-95 duration-150 ease-in-out">
             Connect to Strava
         </button>
     </div>
@@ -40,9 +40,7 @@
 <div class="flex pt-16 h-screen overflow-hidden">
     <!-- SideNavBar -->
     <aside class="hidden lg:flex flex-col p-stack-md gap-stack-sm h-[calc(100vh-64px)] w-64 bg-surface border-r border-outline-variant sticky top-16">
-        <div class="mb-stack-lg px-2">
-            <h2 class="font-display text-headline-md font-bold text-primary">Performance Lab</h2>
-        </div>
+
         <nav id="nav-bar" class="flex-1 flex flex-col gap-1">
             <a onclick="navigate_to('activityFeed')"
                class="flex items-center gap-stack-sm px-stack-md py-stack-sm text-secondary hover:bg-surface-container-high rounded-lg transition-all font-label-md text-label-md"
@@ -64,17 +62,22 @@
             </a>
         </nav>
         <div class="mt-auto flex flex-col gap-1 pt-stack-md border-t border-outline-variant">
-            <a class="flex items-center gap-3 px-4 py-2 text-secondary hover:bg-surface-container-high rounded-lg"
-               href="#">
-                <span class="material-symbols-outlined" data-icon="help">help</span>
-                <span class="font-label-md">Support</span>
-            </a>
+
         </div>
     </aside>
     <!-- Main Content -->
     <main id="main-area" class="flex-1 p-margin-desktop w-full flex flex-col overflow-hidden">
 
     </main>
+    <div id="my-indicator" class="my-indicator">
+        <div class="flex flex-col bg-surface-container-highest w-full h-full animate-pulse rounded-xl p-4 gap-4">
+            <div class="bg-surface-container-low w-full h-full animate-pulse rounded-md"></div>
+            <div class="bg-surface-container-low w-4/5 h-full animate-pulse rounded-md"></div>
+            <div class="bg-surface-container-low w-full h-full animate-pulse rounded-md"></div>
+            <div class="bg-surface-container-low w-2/4 h-full animate-pulse rounded-md"></div>
+            <div class="bg-surface-container-low w-4/5 h-full animate-pulse rounded-md"></div>
+        </div>
+    </div>
     <!-- Stats Sidebar (Right-side contextual bento) -->
 
 </div>
