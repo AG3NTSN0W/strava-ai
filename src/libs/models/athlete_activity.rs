@@ -28,6 +28,15 @@ pub struct AthleteActivity {
     pub pr_count: Option<i32>,
 }
 
+impl AthleteActivity {
+    pub fn to_activity_empty_name_desc(self) -> Activity {
+        let mut activity: Activity = self.into();
+        activity.name = String::new();
+        activity.description = String::new();
+        activity
+    }
+}
+
 impl From<AthleteActivity> for Activity {
     fn from(a: AthleteActivity) -> Self {
         Activity {

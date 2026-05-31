@@ -6,7 +6,8 @@ use crate::libs::models::strava::update_activity::UpdateActivity;
 use crate::libs::ollama_client::OllamaClient;
 use crate::libs::repository::{ActivityRepository, ActivityStreamRepository, AthleteRepository};
 use crate::libs::strava_client::StravaClient;
-use log::{debug, info, warn};
+use anyhow::Result;
+use log::{debug, error, info, warn};
 use std::env;
 use std::sync::Arc;
 use tokio::time::{Duration, interval};
@@ -41,9 +42,7 @@ pub async fn start_scheduler(app_state: Arc<AppState>) {
 }
 
 /// Main scheduled task that runs every 5 hours
-async fn run_scheduled_task(
-    app_state: &AppState,
-) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+async fn run_scheduled_task(app_state: &AppState) -> Result<()> {
     if !app_state.rate_limit.read().await.has_budget() {
         warn!("Skipping scheduled task: rate limit budget exhausted");
         return Ok(());
@@ -63,9 +62,7 @@ async fn run_scheduled_task(
         };
 
         if !athlete.auto_update {
-            debug!(
-                "Summaries generation skipped for athlete: {athlete_name}"
-            );
+            debug!("Summaries generation skipped for athlete: {athlete_name}");
 
             if let Err(e) = add_activities_to_db(app_state, athlete.id, &access_token).await {
                 log::error!("Failed to add activities for {athlete_name}: {e}");
@@ -78,7 +75,7 @@ async fn run_scheduled_task(
         if let Err(e) =
             generate_summaries(athlete.id, &access_token, app_state, athlete.prompt).await
         {
-            log::error!("Failed to generate summaries for {athlete_name}: {e}");
+            error!("Failed to generate activity summary. Error: {e}");
         }
     }
     Ok(())
@@ -88,8 +85,9 @@ async fn add_activities_to_db(
     app_state: &AppState,
     athlete_id: i64,
     access_token: &str,
-) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let activities: Vec<Activity> = StravaClient::get_activities_for_today(access_token, app_state, athlete_id).await?;
+) -> Result<()> {
+    let activities: Vec<Activity> =
+        StravaClient::get_activities_for_today(access_token, app_state, athlete_id).await?;
     for activity in activities {
         let name = activity.name.to_string();
         update_activities_table(app_state, athlete_id, &activity, &name, "").await?;
@@ -104,7 +102,7 @@ async fn update_activities_table(
     activity: &Activity,
     name: &str,
     description: &str,
-) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+) -> Result<()> {
     let athlete_activity = AthleteActivity {
         id: activity.id,
         athlete_id,
@@ -139,14 +137,21 @@ async fn generate_summaries(
     access_token: &str,
     app_state: &AppState,
     prompt: String,
-) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let activities: Vec<Activity> = StravaClient::get_activities_for_today(access_token, app_state, athlete_id).await?;
+) -> Result<()> {
+    let activities: Vec<Activity> =
+        StravaClient::get_activities_for_today(access_token, app_state, athlete_id).await?;
     for activity in activities {
         if ActivityRepository::exists(&app_state.db_pools, activity.id).await? {
             continue;
         }
 
-        let summary = OllamaClient::generate_activity_summary(&activity, &prompt).await?;
+        let summary = match OllamaClient::generate_activity_summary(&activity, &prompt).await {
+            Ok(summary) => summary,
+            Err(e) => {
+                error!("Failed to generate activity summary. Error: {e}");
+                continue;
+            }
+        };
 
         update_activities_table(
             app_state,
@@ -171,11 +176,14 @@ async fn generate_summaries(
                 gear_id: None,
             },
             app_state,
-            athlete_id
+            athlete_id,
         )
         .await?;
 
-        info!("Activity updated. athlete_id: {athlete_id}, Activity Id: {}", activity.id);
+        info!(
+            "Activity updated. athlete_id: {athlete_id}, Activity Id: {}",
+            activity.id
+        );
 
         fetch_and_save_streams(app_state, access_token, activity.id, athlete_id).await?;
     }
@@ -188,13 +196,16 @@ async fn fetch_and_save_streams(
     access_token: &str,
     activity_id: i64,
     athlete_id: i64,
-) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let existing = ActivityStreamRepository::get_by_activity_id(&app_state.db_pools, activity_id).await?;
+) -> Result<()> {
+    let existing =
+        ActivityStreamRepository::get_by_activity_id(&app_state.db_pools, activity_id).await?;
     if !existing.is_empty() {
         return Ok(());
     }
 
-    let streams = StravaClient::get_activity_streams(access_token, activity_id, app_state, athlete_id).await?;
+    let streams =
+        StravaClient::get_activity_streams(access_token, activity_id, app_state, athlete_id)
+            .await?;
 
     for stream in streams {
         let activity_stream = ActivityStream {

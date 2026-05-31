@@ -186,6 +186,15 @@ const set_nav = (id) => {
         }
     }
 
+    let top_nav_element = document.getElementById("top-nav-bar");
+
+    for (let element of top_nav_element.getElementsByTagName("a")) {
+        if (`${id}-nav` === element.id) {
+            element.className = "font-body-md text-body-md text-primary border-b-2 border-primary pb-1";
+        } else {
+            element.className = "font-body-md text-body-md text-secondary hover:text-on-surface transition-colors";
+        }
+    }
 }
 
 const initializeTheme = () => {

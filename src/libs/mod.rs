@@ -1,6 +1,4 @@
-use std::error::Error;
-use std::fmt;
-use serde::Deserialize;
+use thiserror::Error;
 
 pub mod models;
 pub mod repository;
@@ -13,14 +11,17 @@ pub static DEFAULT_PROMPT: &str = "Write a short, funny Strava title and a two-s
          Use max heart rate to determine if activity was 'Easy,Brutal,Insane'.\
          Use a pun if possible, but keep it low-key and cool.";
 
-#[derive(Deserialize, Debug)]
-pub(crate) struct StravAIError(pub(crate) String);
+#[derive(Error, Debug)]
+pub enum AppError {
+    #[error("{0}")]
+    Error(String),
 
-impl fmt::Display for StravAIError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Custom error occurred: {}", self.0)
-    }
+    #[error("Database error: {0}")]
+    DbError(#[from] sqlx::Error),
+
+    #[error("Network request failed: {0}")]
+    Network(#[from] reqwest::Error),
+
+    #[error("Failed to deserialize response: {0}")]
+    ToResponse(#[from] serde_json::Error),
 }
-
-// Minimal implementation of the Error trait
-impl Error for StravAIError {}

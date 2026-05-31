@@ -62,19 +62,23 @@ impl AiResponseTemplate {
                 None
             });
 
-        if let Some(activity) = activity {
-            let response =
-                OllamaClient::generate_activity_summary(&activity.clone().into(), &body.prompt)
-                    .await
-                    .unwrap_or_else(|e| {
-                        error!("Failed to generate activity summary. Error: {e}");
-                        Response {
-                            title: "[ERROR]".to_string(),
-                            description: "Unable to generate title and a description".to_string(),
-                        }
-                    });
+        if let Some(athlete_activity) = activity {
+            let activity_id = athlete_activity.id;
+            let athlete_id = athlete_activity.athlete_id;
+            let response = OllamaClient::generate_activity_summary(
+                &athlete_activity.to_activity_empty_name_desc(),
+                &body.prompt,
+            )
+            .await
+            .unwrap_or_else(|e| {
+                error!("Failed to generate activity summary. Error: {e}");
+                Response {
+                    title: "[ERROR]".to_string(),
+                    description: "Unable to generate title and a description".to_string(),
+                }
+            });
 
-            return AiResponseTemplate::from((response, activity.athlete_id, activity.id));
+            return AiResponseTemplate::from((response, athlete_id, activity_id));
         }
 
         Self {

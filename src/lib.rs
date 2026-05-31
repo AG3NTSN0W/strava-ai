@@ -8,6 +8,7 @@ use sqlx::{Pool, Sqlite};
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::RwLock;
+use anyhow::Result;
 
 pub mod controllers;
 pub mod libs;
@@ -88,7 +89,7 @@ impl AppState {
     pub async fn get_access_token(
         &self,
         athlete: &Athlete,
-    ) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+    ) -> Result<String> {
         let athlete_id = athlete.id;
         if let Some(access_token) = self.get_token_from_cache(athlete_id).await {
             debug!("Using cached access token for athlete: {athlete_id}");

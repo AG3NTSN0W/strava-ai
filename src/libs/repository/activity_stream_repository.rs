@@ -1,9 +1,10 @@
-use crate::libs::StravAIError;
+use crate::libs::AppError;
 use crate::libs::models::activity_stream::ActivityStream;
 use serde::Serialize;
 use sqlx::sqlite::SqliteRow;
 use sqlx::{Error, Pool, Row, Sqlite};
 use std::collections::HashMap;
+use anyhow::Result;
 
 pub struct HeartRateLatLngResults {
     pub latlng: Vec<Vec<Vec<f64>>>,
@@ -99,7 +100,7 @@ impl ActivityStreamRepository {
         sport_types: Option<&[&str]>,
         date_from: Option<&str>,
         date_to: Option<&str>,
-    ) -> Result<ActivityStreamResults<Vec<Vec<Vec<f64>>>>, Box<dyn std::error::Error + Send + Sync>>
+    ) -> Result<ActivityStreamResults<Vec<Vec<Vec<f64>>>>>
     {
         let mut sql = String::from(
             "SELECT s.data,
@@ -165,7 +166,7 @@ impl ActivityStreamRepository {
         sport_types: Option<&[&str]>,
         date_from: Option<&str>,
         date_to: Option<&str>,
-    ) -> Result<ActivityStreamResults<HeartRateLatLngResults>, Box<dyn std::error::Error + Send + Sync>> {
+    ) -> Result<ActivityStreamResults<HeartRateLatLngResults>> {
         let mut sql = String::from(
             "SELECT s.activity_id, s.data, s.stream_type,
                     ROUND(a.distance, 2) as distance,
@@ -254,7 +255,7 @@ impl ActivityStreamRepository {
         sport_types: Option<&[&str]>,
         date_from: Option<&str>,
         date_to: Option<&str>,
-    ) -> Result<ActivityStreamResults<AltitudeLatLngResults>, Box<dyn std::error::Error + Send + Sync>> {
+    ) -> Result<ActivityStreamResults<AltitudeLatLngResults>> {
         let mut sql = String::from(
             "SELECT s.activity_id, s.data, s.stream_type,
                     ROUND(a.distance, 2) as distance,
@@ -340,7 +341,7 @@ impl ActivityStreamRepository {
         sport_types: Option<&[&str]>,
         date_from: Option<&str>,
         date_to: Option<&str>,
-    ) -> Result<ActivityStreamResults<VelocityLatLngResults>, Box<dyn std::error::Error + Send + Sync>> {
+    ) -> Result<ActivityStreamResults<VelocityLatLngResults>> {
         let mut sql = String::from(
             "SELECT s.activity_id, s.data, s.stream_type,
                     ROUND(a.distance, 2) as distance,
@@ -424,7 +425,7 @@ impl ActivityStreamRepository {
         pool: &Pool<Sqlite>,
         athlete_id: i64,
         activity_id: i64,
-    ) -> Result<Vec<Vec<f64>>, Box<dyn std::error::Error + Send + Sync>> {
+    ) -> Result<Vec<Vec<f64>>, AppError> {
         let sql = String::from(
             "SELECT s.data FROM activity_stream s
             JOIN activity a ON a.id = s.activity_id
@@ -438,7 +439,7 @@ impl ActivityStreamRepository {
             .await?;
 
         match row {
-            None => Err(Box::new(StravAIError("Map data not found".into()))),
+            None => Err(AppError::Error("Map data not found".into())),
             Some(row) => {
                 let data: String = row.get("data");
                 Ok(serde_json::from_str(&data)?)

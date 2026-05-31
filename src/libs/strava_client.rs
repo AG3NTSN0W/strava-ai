@@ -24,7 +24,7 @@ pub enum StravaClientError {
         status_code: StatusCode,
     },
 
-    #[error("Unauthorized: Client {0}")]
+    #[error("Client {0} is unauthorized")]
     UNAUTHORIZED(i64),
 
     #[error("network request failed: {0}")]

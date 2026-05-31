@@ -1,9 +1,27 @@
-use crate::libs::StravAIError;
 use crate::libs::models::ollama::{OllamaRequest, OllamaResponse, Response};
 use crate::libs::models::strava::activity::Activity;
 use log::{debug, error};
 use std::env;
-use std::error::Error;
+use axum::http::StatusCode;
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+pub enum OllamaClientError {
+    #[error("Ollama API error {context}: HTTP status {status_code}")]
+    UnknowError {
+        context: String,
+        status_code: StatusCode,
+    },
+
+    #[error("Network request failed: {0}")]
+    Network(#[from] reqwest::Error),
+
+    #[error("Failed to deserialize response: {0}")]
+    ToResponse(#[from] serde_json::Error),
+
+    #[error("Missing OLLAMA_URL environment variable")]
+    UrlNotFound(),
+}
 
 pub struct OllamaClient {}
 
@@ -24,15 +42,13 @@ impl OllamaClient {
     /// Calls the Ollama API to generate title and description for an activity
     pub async fn generate_summary(
         request: OllamaRequest,
-    ) -> Result<Response, Box<dyn std::error::Error + Send + Sync>> {
+    ) -> Result<Response, OllamaClientError> {
         let client = reqwest::Client::new();
 
         let url = match Self::get_url() {
             Some(url) => url,
             None => {
-                return Err(Box::new(StravAIError(
-                    "Missing OLLAMA_URL environment variable".into(),
-                )));
+                return Err(OllamaClientError::UrlNotFound());
             }
         };
         debug!("URL: {url}");
@@ -40,10 +56,13 @@ impl OllamaClient {
         let response = client.post(url).json(&request).send().await?;
 
         if !response.status().is_success() {
-            let status = response.status();
-            let error_text = response.text().await.unwrap_or_default();
-            error!("Ollama API error: {status} - {error_text}");
-            return Err(format!("Ollama API returned status {status}: {error_text}").into());
+            let status_code = response.status();
+            let context = response.text().await.unwrap_or_default();
+            error!("Ollama API error: {status_code} - {context}");
+            return Err(OllamaClientError::UnknowError{
+                context,
+                status_code,
+            });
         }
 
         let ollama_response: OllamaResponse = response.json().await?;
@@ -54,7 +73,7 @@ impl OllamaClient {
     pub async fn generate_activity_summary(
         activity: &Activity,
         prompt: &str,
-    ) -> Result<Response, Box<dyn Error + Send + Sync>> {
+    ) -> Result<Response, OllamaClientError> {
         let request: OllamaRequest = OllamaRequest {
             model: "llama3.2".to_string(),
             prompt: format!("The Data: {}", activity.to_json_string()),

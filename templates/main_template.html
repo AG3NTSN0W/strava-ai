@@ -29,6 +29,11 @@
 <header class="fixed top-0 left-0 right-0 z-50 bg-background border-b border-outline-variant h-16 flex items-center px-margin-desktop w-full justify-between">
     <div class="flex items-center gap-stack-lg">
         <span class="font-display text-headline-lg font-black text-primary uppercase tracking-tighter">STRAVA AI</span>
+        <nav id="top-nav-bar" class="lg:hidden md:flex items-center gap-6">
+            <a id="activityFeed-nav" onclick="navigate_to('activityFeed')" class="font-body-md text-body-md text-secondary hover:text-on-surface transition-colors" href="#activityFeed">Activity Feed</a>
+            <a id="heatmaps-nav" onclick="navigate_to('heatmaps')" class="font-body-md text-body-md text-secondary hover:text-on-surface transition-colors" href="#Heatmaps">Heatmaps</a>
+            <a id="settings-nav" onclick="navigate_to('settings')" class="font-body-md text-body-md text-secondary hover:text-on-surface transition-colors" href="#Settings">Settings</a>
+        </nav>
     </div>
     <div class="flex items-center gap-stack-md">
         <button onclick="connectWithStrava()"
@@ -44,19 +49,19 @@
         <nav id="nav-bar" class="flex-1 flex flex-col gap-1">
             <a onclick="navigate_to('activityFeed')"
                class="flex items-center gap-stack-sm px-stack-md py-stack-sm text-secondary hover:bg-surface-container-high rounded-lg transition-all font-label-md text-label-md"
-               id="activityFeed">
+               id="activityFeed" href="#activityFeed">
                 <span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
                 <span class="font-label-md">Activity Feed</span>
             </a>
             <a onclick="navigate_to('heatmaps')"
                class="flex items-center gap-stack-sm px-stack-md py-stack-sm text-secondary hover:bg-surface-container-high rounded-lg transition-all font-label-md text-label-md"
-               id="heatmaps">
+               id="heatmaps" href="#Heatmaps">
                 <span class="material-symbols-outlined" data-icon="map">map</span>
                 <span class="font-label-md">Heatmaps</span>
             </a>
             <a onclick="navigate_to('settings')"
                class="flex items-center gap-stack-sm px-stack-md py-stack-sm text-secondary hover:bg-surface-container-high rounded-lg transition-all font-label-md text-label-md"
-               id="settings">
+               id="settings" href="#Settings">
                 <span class="material-symbols-outlined" data-icon="settings">settings</span>
                 <span class="font-label-md">Settings</span>
             </a>

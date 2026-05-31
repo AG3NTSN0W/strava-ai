@@ -4,6 +4,7 @@ use crate::libs::models::strava::update_activity::UpdateActivity;
 use crate::libs::models::{Athlete, AthleteActivity};
 use crate::libs::repository::{ActivityRepository, ActivityStreamRepository, AthleteRepository};
 use crate::{AppState, libs::strava_client::StravaClient};
+use anyhow::Result;
 use axum::{
     Form,
     extract::{Query, State},
@@ -92,7 +93,7 @@ pub async fn exchange_token(
     };
 
     let athlete_id = token.athlete.id;
-    let access_token = token.access_token.clone();
+    let access_token = token.access_token;
     info!("Authenticated athlete: {}", token.athlete.firstname);
 
     let athlete = Athlete {
@@ -130,12 +131,9 @@ pub async fn update_activity(
         Err(resp) => return resp,
     };
 
-    let access_token = match app_state.get_access_token(&athlete).await {
-        Ok(t) => t,
-        Err(e) => {
-            error!("Failed to get access token: {e}");
-            return (StatusCode::INTERNAL_SERVER_ERROR, "Access token error").into_response();
-        }
+    let access_token = match get_token(&app_state, &athlete).await {
+        Ok(value) => value,
+        Err(value) => return value.into_response(),
     };
 
     let strava_update = UpdateActivity {
@@ -149,7 +147,7 @@ pub async fn update_activity(
         update.activity_id,
         &strava_update,
         &app_state,
-        update.athlete_id
+        update.athlete_id,
     )
     .await
     {
@@ -266,12 +264,9 @@ pub async fn backfill_streams(
         _ => return (StatusCode::NOT_FOUND, "Athlete not found").into_response(),
     };
 
-    let access_token = match app_state.get_access_token(&athlete).await {
-        Ok(t) => t,
-        Err(e) => {
-            error!("Failed to get access token: {e}");
-            return (StatusCode::INTERNAL_SERVER_ERROR, "Access token error").into_response();
-        }
+    let access_token = match get_token(&app_state, &athlete).await {
+        Ok(value) => value,
+        Err(value) => return value.into_response(),
     };
 
     let activities =
@@ -286,7 +281,12 @@ pub async fn backfill_streams(
     );
 
     let activity_ids: Vec<i64> = activities.into_iter().map(|a| a.id).collect();
-    spawn_stream_fetch((*app_state).clone(), access_token, activity_ids, params.athlete_id);
+    spawn_stream_fetch(
+        (*app_state).clone(),
+        access_token,
+        activity_ids,
+        params.athlete_id,
+    );
 
     (
         StatusCode::OK,
@@ -295,12 +295,19 @@ pub async fn backfill_streams(
         .into_response()
 }
 
+async fn get_token(app_state: &Arc<AppState>, athlete: &Athlete) -> Result<String, impl IntoResponse> {
+    let access_token = match app_state.get_access_token(athlete).await {
+        Ok(t) => t,
+        Err(e) => {
+            error!("Failed to get access token: {e}");
+            return Err((StatusCode::INTERNAL_SERVER_ERROR, "Access token error").into_response());
+        }
+    };
+    Ok(access_token)
+}
 // --- Helpers ---
 
-async fn upsert_athlete(
-    pool: &Pool<Sqlite>,
-    athlete: &Athlete,
-) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+async fn upsert_athlete(pool: &Pool<Sqlite>, athlete: &Athlete) -> Result<()> {
     if AthleteRepository::exists(pool, athlete.id).await? {
         AthleteRepository::update_refresh_token(pool, athlete.id, &athlete.refresh_token).await?;
         debug!("Updated refresh token for athlete: {}", athlete.id);
