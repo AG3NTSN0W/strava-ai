@@ -90,3 +90,58 @@ pub async fn get_template(
 ) -> impl IntoResponse {
     HtmlTemplate(ActivityTemplate::new(state, query_params.0).await)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use askama::Template;
+
+    fn test_activity() -> AthleteActivity {
+        AthleteActivity {
+            id: 1,
+            athlete_id: 1,
+            name: "Morning Run".to_string(),
+            description: "Easy".to_string(),
+            distance: 5.0,
+            moving_time: "00:25:00".to_string(),
+            elapsed_time: "00:27:00".to_string(),
+            total_elevation_gain: Some(50.0),
+            activity_type: "Run".to_string(),
+            sport_type: "Run".to_string(),
+            start_date_local: "01 January 2026".to_string(),
+            achievement_count: None,
+            average_speed: None,
+            max_speed: None,
+            average_watts: None,
+            kilojoules: None,
+            average_heartrate: None,
+            max_heartrate: None,
+            elev_high: None,
+            elev_low: None,
+            pr_count: None,
+        }
+    }
+
+    #[test]
+    fn renders_with_activities() {
+        let template = ActivityTemplate {
+            activities: vec![test_activity()],
+            sport_types: vec!["Run".to_string(), "Ride".to_string()],
+            sport_type: "all".to_string(),
+        };
+        let html = template.render().unwrap();
+        assert!(html.contains("Morning Run"));
+        assert!(html.contains("5")); // distance
+    }
+
+    #[test]
+    fn renders_empty_activities() {
+        let template = ActivityTemplate {
+            activities: vec![],
+            sport_types: vec![],
+            sport_type: "all".to_string(),
+        };
+        let html = template.render().unwrap();
+        assert!(html.is_empty() == false);
+    }
+}

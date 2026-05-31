@@ -84,3 +84,47 @@ pub async fn get_athlete(
     debug!("Athlete not found: {query_params:?}. redirect to main page");
     Redirect::permanent("/stravai").into_response()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use askama::Template;
+
+    #[test]
+    fn renders_main_template() {
+        let template = MainTemplate {
+            strava_client_id: 12345,
+            athlete: AthleteDisplay {
+                id: 1,
+                firstname: "Jane".to_string(),
+                lastname: "Doe".to_string(),
+            },
+        };
+        let html = template.render().unwrap();
+        assert!(html.contains("Jane"));
+        assert!(html.contains("12345"));
+    }
+
+    #[test]
+    fn renders_landing_page() {
+        let template = LandingPage {
+            strava_client_id: 99999,
+        };
+        let html = template.render().unwrap();
+        assert!(html.contains("99999"));
+    }
+
+    #[test]
+    fn renders_athletes_page() {
+        let template = AthletesPage {
+            strava_client_id: 11111,
+            athletes: vec![
+                AthleteDisplay { id: 1, firstname: "Alice".to_string(), lastname: "A".to_string() },
+                AthleteDisplay { id: 2, firstname: "Bob".to_string(), lastname: "B".to_string() },
+            ],
+        };
+        let html = template.render().unwrap();
+        assert!(html.contains("Alice"));
+        assert!(html.contains("Bob"));
+    }
+}

@@ -178,21 +178,24 @@ const clear_main_area = () => {
 
 const set_nav = (id) => {
     let nav_element = document.getElementById("nav-bar");
-    for (let element of nav_element.getElementsByTagName("a")) {
-        if (id === element.id) {
-            element.className = "flex items-center gap-stack-sm px-stack-md py-stack-sm bg-primary-container text-on-primary-container font-bold rounded-lg transition-all font-label-md text-label-md";
-        } else {
-            element.className = "flex items-center gap-stack-sm px-stack-md py-stack-sm text-secondary hover:bg-surface-container-high rounded-lg transition-all font-label-md text-label-md";
+    if (nav_element !== undefined) {
+        for (let element of nav_element.getElementsByTagName("a")) {
+            if (id === element.id) {
+                element.className = "flex items-center gap-stack-sm px-stack-md py-stack-sm bg-primary-container text-on-primary-container font-bold rounded-lg transition-all font-label-md text-label-md";
+            } else {
+                element.className = "flex items-center gap-stack-sm px-stack-md py-stack-sm text-secondary hover:bg-surface-container-high rounded-lg transition-all font-label-md text-label-md";
+            }
         }
     }
 
     let top_nav_element = document.getElementById("top-nav-bar");
-
-    for (let element of top_nav_element.getElementsByTagName("a")) {
-        if (`${id}-nav` === element.id) {
-            element.className = "font-body-md text-body-md text-primary border-b-2 border-primary pb-1";
-        } else {
-            element.className = "font-body-md text-body-md text-secondary hover:text-on-surface transition-colors";
+    if (top_nav_element !== undefined) {
+        for (let element of top_nav_element.getElementsByTagName("a")) {
+            if (`${id}-nav` === element.id) {
+                element.className = "font-body-md text-body-md text-primary border-b-2 border-primary pb-1";
+            } else {
+                element.className = "font-body-md text-body-md text-secondary hover:text-on-surface transition-colors";
+            }
         }
     }
 }
@@ -230,7 +233,6 @@ const toggle_auto_update = () => {
         },
     });
 }
-
 
 
 window.onload = () => {

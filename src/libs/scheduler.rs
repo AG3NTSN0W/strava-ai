@@ -13,15 +13,18 @@ use std::sync::Arc;
 use tokio::time::{Duration, interval};
 
 fn get_internal_hours() -> f64 {
-    env::var("STRAVA_INTERVAL")
-        .ok()
-        .and_then(|val| {
-            val.trim().trim_matches('"').parse().ok().or_else(|| {
-                warn!("STRAVA_INTERVAL value '{val}' is not a valid number, using default");
-                None
-            })
+    parse_interval(env::var("STRAVA_INTERVAL").ok())
+}
+
+fn parse_interval(val: Option<String>) -> f64 {
+    val.and_then(|v| {
+        let trimmed = v.trim().trim_matches('"').to_string();
+        trimmed.parse().ok().or_else(|| {
+            warn!("STRAVA_INTERVAL value '{v}' is not a valid number, using default");
+            None
         })
-        .unwrap_or(5.0)
+    })
+    .unwrap_or(5.0)
 }
 
 /// Start the background scheduler task
@@ -221,4 +224,44 @@ async fn fetch_and_save_streams(
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_interval_returns_default_when_none() {
+        assert_eq!(parse_interval(None), 5.0);
+    }
+
+    #[test]
+    fn parse_interval_parses_valid_number() {
+        assert_eq!(parse_interval(Some("3".to_string())), 3.0);
+    }
+
+    #[test]
+    fn parse_interval_parses_float() {
+        assert_eq!(parse_interval(Some("2.5".to_string())), 2.5);
+    }
+
+    #[test]
+    fn parse_interval_trims_whitespace() {
+        assert_eq!(parse_interval(Some("  4  ".to_string())), 4.0);
+    }
+
+    #[test]
+    fn parse_interval_trims_quotes() {
+        assert_eq!(parse_interval(Some("\"6\"".to_string())), 6.0);
+    }
+
+    #[test]
+    fn parse_interval_returns_default_for_invalid() {
+        assert_eq!(parse_interval(Some("abc".to_string())), 5.0);
+    }
+
+    #[test]
+    fn parse_interval_returns_default_for_empty() {
+        assert_eq!(parse_interval(Some("".to_string())), 5.0);
+    }
 }

@@ -84,3 +84,23 @@ impl OllamaClient {
         Self::generate_summary(request).await
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn unknown_error_display() {
+        let err = OllamaClientError::UnknowError {
+            context: "model not found".to_string(),
+            status_code: StatusCode::NOT_FOUND,
+        };
+        assert_eq!(err.to_string(), "Ollama API error model not found: HTTP status 404 Not Found");
+    }
+
+    #[test]
+    fn url_not_found_display() {
+        let err = OllamaClientError::UrlNotFound();
+        assert_eq!(err.to_string(), "Missing OLLAMA_URL environment variable");
+    }
+}

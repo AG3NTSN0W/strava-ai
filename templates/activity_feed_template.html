@@ -6,7 +6,7 @@
         <div class="w-full md:w-48">
             <label class="block font-label-sm text-secondary mb-2 uppercase">Type</label>
             <select onchange="go_to_activity_feed(event.target.value)"
-                    class="w-full bg-surface border border-outline-variant rounded-lg py-3 px-4 focus:outline-none focus:border-primary transition-colors font-body-md appearance-none">
+                    class="w-full bg-surface border border-outline-variant rounded-lg py-3 px-4 focus:outline-none focus:border-primary hover:border-primary transition-colors font-body-md appearance-none cursor-pointer">
                 <option {% if sport_type == "all" %}selected{% endif %} value="all">All Activities</option>
                 {% for s_type in sport_types %}
                 <option {% if sport_type == s_type.as_str() %}selected{% endif %} value="{{s_type}}">{{s_type}}</option>

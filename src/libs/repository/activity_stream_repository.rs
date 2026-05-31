@@ -447,6 +447,28 @@ impl ActivityStreamRepository {
         }
     }
 
+    pub async fn get_metric_stream_by_activity_id(
+        pool: &Pool<Sqlite>,
+        activity_id: i64,
+        stream_type: &str,
+    ) -> Result<Vec<f64>, AppError> {
+        let row = sqlx::query(
+            "SELECT data FROM activity_stream WHERE activity_id = ? AND stream_type = ?",
+        )
+        .bind(activity_id)
+        .bind(stream_type)
+        .fetch_optional(pool)
+        .await?;
+
+        match row {
+            None => Ok(vec![]),
+            Some(row) => {
+                let data: String = row.get("data");
+                Ok(serde_json::from_str(&data)?)
+            }
+        }
+    }
+
     fn get_activity_data(row: &SqliteRow) -> ActivityDataResults {
         ActivityDataResults {
             distance: row.get("distance"),

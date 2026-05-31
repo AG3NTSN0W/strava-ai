@@ -62,3 +62,75 @@ impl RateLimit {
         within_15min && within_daily
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::Duration;
+
+    #[test]
+    fn default_has_budget_returns_true_when_no_data() {
+        let rl = RateLimit::default();
+        assert!(rl.has_budget());
+    }
+
+    #[test]
+    fn has_budget_within_limits() {
+        let rl = RateLimit {
+            limit_15min: 100,
+            limit_daily: 1000,
+            usage_15min: 50,
+            usage_daily: 500,
+            updated_at: Utc::now(),
+        };
+        assert!(rl.has_budget());
+    }
+
+    #[test]
+    fn has_budget_false_when_15min_exhausted() {
+        let rl = RateLimit {
+            limit_15min: 100,
+            limit_daily: 1000,
+            usage_15min: 95, // >= 90% of 100
+            usage_daily: 500,
+            updated_at: Utc::now(),
+        };
+        assert!(!rl.has_budget());
+    }
+
+    #[test]
+    fn has_budget_false_when_daily_exhausted() {
+        let rl = RateLimit {
+            limit_15min: 100,
+            limit_daily: 1000,
+            usage_15min: 50,
+            usage_daily: 950, // >= 90% of 1000
+            updated_at: Utc::now(),
+        };
+        assert!(!rl.has_budget());
+    }
+
+    #[test]
+    fn has_budget_true_after_15min_window_reset() {
+        let rl = RateLimit {
+            limit_15min: 100,
+            limit_daily: 1000,
+            usage_15min: 99,
+            usage_daily: 500,
+            updated_at: Utc::now() - Duration::minutes(16),
+        };
+        assert!(rl.has_budget());
+    }
+
+    #[test]
+    fn has_budget_true_after_daily_reset() {
+        let rl = RateLimit {
+            limit_15min: 100,
+            limit_daily: 1000,
+            usage_15min: 50,
+            usage_daily: 999,
+            updated_at: Utc::now() - Duration::days(1),
+        };
+        assert!(rl.has_budget());
+    }
+}

@@ -515,3 +515,97 @@ fn seconds_to_hms(total: u64) -> String {
     let s = total % 60;
     format!("{h:02}:{m:02}:{s:02}")
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use askama::Template;
+
+    #[test]
+    fn renders_heatmap_template() {
+        let template = HeatmapTemplate {
+            athlete_id: 1,
+            sport_types: vec!["Run".to_string(), "Ride".to_string()],
+            selected_sports: vec!["Run".to_string()],
+            date_from: "2026-01-01".to_string(),
+            date_to: "2026-01-31".to_string(),
+            heat_map_data: HeatMapData {
+                points: vec![],
+                max_count: 10,
+                low_count: 0,
+                palette: HashMap::from([("0.0".into(), "#0000FF".into())]),
+                frequency_colors: "#0000FF,#FF0000".to_string(),
+                activities_data: ActivitiesData {
+                    activity_count: 5,
+                    avg_distance: 10.0,
+                    total_distance: 50.0,
+                    avg_time: "00:30:00".to_string(),
+                    total_time: "02:30:00".to_string(),
+                    avg_elevation: 100.0,
+                    average_heartrate: 140,
+                },
+            },
+            map_type: "frequency".to_string(),
+        };
+        let html = template.render().unwrap();
+        assert!(html.contains("ACTIVITY COUNT"));
+        assert!(html.contains("2026-01-01"));
+        assert!(html.contains("Frequency"));
+    }
+
+    #[test]
+    fn parse_hms_to_seconds_valid() {
+        assert_eq!(parse_hms_to_seconds("01:30:00"), 5400);
+        assert_eq!(parse_hms_to_seconds("00:00:45"), 45);
+        assert_eq!(parse_hms_to_seconds("00:00:00"), 0);
+    }
+
+    #[test]
+    fn parse_hms_to_seconds_invalid() {
+        assert_eq!(parse_hms_to_seconds("invalid"), 0);
+        assert_eq!(parse_hms_to_seconds(""), 0);
+    }
+
+    #[test]
+    fn seconds_to_hms_formats_correctly() {
+        assert_eq!(seconds_to_hms(3661), "01:01:01");
+        assert_eq!(seconds_to_hms(0), "00:00:00");
+        assert_eq!(seconds_to_hms(59), "00:00:59");
+    }
+
+    #[test]
+    fn build_activities_data_empty() {
+        let data = build_activities_data(vec![]);
+        assert_eq!(data.activity_count, 0);
+        assert_eq!(data.total_distance, 0.0);
+    }
+
+    #[test]
+    fn build_activities_data_computes_averages() {
+        let data = build_activities_data(vec![
+            ActivityDataResults { distance: 10.0, elapsed_time: "01:00:00".to_string(), total_elevation_gain: 100.0, average_heartrate: 150 },
+            ActivityDataResults { distance: 20.0, elapsed_time: "02:00:00".to_string(), total_elevation_gain: 200.0, average_heartrate: 160 },
+        ]);
+        assert_eq!(data.activity_count, 2);
+        assert_eq!(data.total_distance, 30.0);
+        assert_eq!(data.avg_distance, 15.0);
+        assert_eq!(data.average_heartrate, 155);
+        assert_eq!(data.total_time, "03:00:00");
+        assert_eq!(data.avg_time, "01:30:00");
+    }
+
+    #[test]
+    fn heatmap_query_params_parses_valid() {
+        let params = HeatmapQueryParams::from_raw("athlete_id=42&sport_type=Run&date_from=2026-01-01&map_type=heartrate").unwrap();
+        assert_eq!(params.athlete_id, 42);
+        assert_eq!(params.sport_types, vec!["Run"]);
+        assert_eq!(params.date_from, Some("2026-01-01".to_string()));
+        assert_eq!(params.map_type, "heartrate");
+    }
+
+    #[test]
+    fn heatmap_query_params_returns_none_without_athlete_id() {
+        let params = HeatmapQueryParams::from_raw("sport_type=Run");
+        assert!(params.is_none());
+    }
+}

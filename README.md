@@ -1,5 +1,7 @@
 # StravAI Oxide
 
+[![CI](https://github.com/AG3NTSN0W/strava-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/AG3NTSN0W/strava-ai/actions/workflows/ci.yml)
+
 A self-hosted Rust web application that automatically generates AI-powered titles and descriptions for your Strava activities using Ollama (Llama 3.2).
 
 ## Features

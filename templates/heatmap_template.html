@@ -14,7 +14,7 @@
             <label class="block font-label-sm text-secondary uppercase">Sport</label>
             <div class="relative">
                 <button type="button" onclick="this.nextElementSibling.classList.toggle('hidden')"
-                        class="bg-surface border border-outline-variant rounded-lg py-3 px-4 font-body-md min-w-[120px] text-left">
+                        class="bg-surface border border-outline-variant rounded-lg py-3 px-4 font-body-md min-w-[120px] text-left hover:border-primary cursor-pointer transition-colors">
                     {{ selected_sports.len() }} selected ▾
                 </button>
                 <div class="hidden absolute top-full mt-1 left-0 bg-surface border border-outline-variant rounded-lg shadow-lg z-[10000] min-w-[140px]">
@@ -32,7 +32,7 @@
             <label class="block font-label-sm text-secondary uppercase">Map</label>
             <div class="relative">
                 <button type="button" onclick="this.nextElementSibling.classList.toggle('hidden')"
-                        class="bg-surface border border-outline-variant rounded-lg py-3 px-4 font-body-md min-w-[120px] text-left">
+                        class="bg-surface border border-outline-variant rounded-lg py-3 px-4 font-body-md min-w-[120px] text-left hover:border-primary cursor-pointer transition-colors">
                     {% if map_type == "frequency" %}Frequency{% endif %}{% if map_type == "heartrate" %}Heart Rate{%
                     endif %}{% if map_type == "altitude" %}Altitude{% endif %}{% if map_type == "velocity" %}Speed{%
                     endif %} ▾
@@ -64,15 +64,15 @@
         <div class="flex ml-auto gap-gutter items-center">
             <label class="block font-label-sm text-secondary uppercase">From</label>
             <input type="date" name="date_from" value="{{ date_from }}"
-                   class="bg-surface border border-outline-variant rounded-lg py-3 px-4 focus:outline-none focus:border-primary transition-colors font-body-md"/>
+                   class="bg-surface border border-outline-variant rounded-lg py-3 px-4 focus:outline-none focus:border-primary hover:border-primary transition-colors font-body-md cursor-pointer"/>
         </div>
         <div class="flex ml-auto gap-gutter items-center">
             <label class="block font-label-sm text-secondary uppercase">To</label>
             <input type="date" name="date_to" value="{{ date_to }}"
-                   class="bg-surface border border-outline-variant rounded-lg py-3 px-4 focus:outline-none focus:border-primary transition-colors font-body-md"/>
+                   class="bg-surface border border-outline-variant rounded-lg py-3 px-4 focus:outline-none focus:border-primary hover:border-primary transition-colors font-body-md cursor-pointer"/>
         </div>
         <button type="submit"
-                class="bg-primary text-on-primary px-stack-md py-3 rounded-lg font-label-md hover:scale-95 duration-150 ease-in-out">
+                class="bg-primary text-on-primary px-stack-md py-3 rounded-lg font-label-md hover:opacity-90 duration-150 ease-in-out">
             Apply
         </button>
     </form>

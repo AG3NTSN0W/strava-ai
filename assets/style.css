@@ -50,51 +50,51 @@
 
 .dark {
     --color-primary-fixed: #ffdbd0;
-    --color-inverse-on-surface: #313030;
-    --color-on-tertiary-fixed-variant: #474746;
+    --color-inverse-on-surface: #2d1f1a;
+    --color-on-tertiary-fixed-variant: #005049;
     --color-on-error-container: #ffdad6;
-    --color-surface-container-high: #2a2a2a;
-    --color-surface: #131313;
+    --color-surface-container-high: #2b2220;
+    --color-surface: #1a1110;
     --color-on-primary-fixed: #3a0a00;
-    --color-on-background: #e5e2e1;
+    --color-on-background: #ede0dc;
     --color-error: #ffb4ab;
-    --color-surface-variant: #353534;
+    --color-surface-variant: #332824;
     --color-inverse-primary: #ae3100;
-    --color-outline: #ac897e;
-    --color-outline-variant: #5c4038;
-    --color-on-secondary: #303030;
-    --color-tertiary: #c8c6c5;
-    --color-surface-container-highest: #353534;
-    --color-on-primary-container: #531300;
-    --color-surface-container: #201f1f;
-    --color-secondary-fixed: #e5e2e1;
-    --color-surface-dim: #131313;
-    --color-on-tertiary-fixed: #1b1c1c;
-    --color-primary-fixed-dim: #ffb59f;
+    --color-outline: #a08078;
+    --color-outline-variant: #4d3830;
+    --color-on-secondary: #1a1110;
+    --color-tertiary: #7edbd0;
+    --color-surface-container-highest: #362b28;
+    --color-on-primary-container: #ffffff;
+    --color-surface-container: #231a18;
+    --color-secondary-fixed: #e5e1e4;
+    --color-surface-dim: #1a1110;
+    --color-on-tertiary-fixed: #00201d;
+    --color-primary-fixed-dim: #e85d04;
     --color-on-error: #690005;
-    --color-surface-bright: #3a3939;
-    --color-tertiary-fixed: #e4e2e1;
-    --color-on-surface-variant: #e6beb2;
-    --color-on-primary: #5e1700;
-    --color-primary-container: #ff571b;
+    --color-surface-bright: #423734;
+    --color-tertiary-fixed: #61f9e9;
+    --color-on-surface-variant: #d8c2ba;
+    --color-on-primary: #ffffff;
+    --color-primary-container: #b34500;
     --color-error-container: #93000a;
-    --color-tertiary-container: #929090;
-    --color-on-secondary-fixed-variant: #474746;
-    --color-secondary-fixed-dim: #c8c6c5;
-    --color-background: #131313;
-    --color-on-secondary-fixed: #1b1b1c;
-    --color-on-tertiary-container: #2a2a2a;
-    --color-secondary: #c8c6c5;
-    --color-surface-tint: #ffb59f;
-    --color-surface-container-low: #1c1b1b;
-    --color-inverse-surface: #e5e2e1;
-    --color-surface-container-lowest: #0e0e0e;
-    --color-secondary-container: #474746;
-    --color-tertiary-fixed-dim: #c8c6c5;
-    --color-on-surface: #e5e2e1;
-    --color-on-secondary-container: #b7b5b4;
-    --color-primary: #ffb59f;
-    --color-on-tertiary: #303030;
+    --color-tertiary-container: #005f57;
+    --color-on-secondary-fixed-variant: #474649;
+    --color-secondary-fixed-dim: #c9c5c8;
+    --color-background: #1a1110;
+    --color-on-secondary-fixed: #1b1b1d;
+    --color-on-tertiary-container: #a0f5ea;
+    --color-secondary: #cdc8c6;
+    --color-surface-tint: #e85d04;
+    --color-surface-container-low: #1f1614;
+    --color-inverse-surface: #ede0dc;
+    --color-surface-container-lowest: #140d0b;
+    --color-secondary-container: #3d3332;
+    --color-tertiary-fixed-dim: #3adccc;
+    --color-on-surface: #ede0dc;
+    --color-on-secondary-container: #d8ccc8;
+    --color-primary: #e85d04;
+    --color-on-tertiary: #003731;
     --color-on-primary-fixed-variant: #852400;
 }
 
@@ -211,23 +211,23 @@
 }
 
 .nav-link {
-    color: rgb(95 94 96);
+    color: var(--color-secondary);
     transition: all 200ms;
 }
 
 .nav-link:hover {
-    background-color: rgb(233 232 231);
+    background-color: var(--color-surface-container-high);
 }
 
 .nav-link.active {
-    background-color: rgb(213 62 0);
-    color: rgb(255 251 255);
+    background-color: var(--color-primary-container);
+    color: var(--color-on-primary-container);
     font-weight: 700;
     transform: translateX(0.25rem);
 }
 
 body {
-    background-color: #fbf9f9;
+    background-color: var(--color-background);
 }
 
 /* ! tailwindcss v3.4.17 | MIT License | https://tailwindcss.com */
@@ -517,6 +517,11 @@ select {
 
 [type='radio'] {
     border-radius: 100%
+}
+
+[type='checkbox']:hover, [type='radio']:hover {
+    border-color: var(--color-primary);
+    cursor: pointer
 }
 
 [type='checkbox']:focus, [type='radio']:focus {

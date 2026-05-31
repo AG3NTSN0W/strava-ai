@@ -118,3 +118,46 @@ impl AppState {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    async fn test_app_state() -> Arc<AppState> {
+        let pool = Pool::<Sqlite>::connect("sqlite::memory:").await.unwrap();
+        AppState::new(12345, "secret".to_string(), pool)
+    }
+
+    #[tokio::test]
+    async fn cache_and_retrieve_access_token() {
+        let state = test_app_state().await;
+        state.cache_access_token(1, "token_abc").await;
+        let cached = state.get_token_from_cache(1).await;
+        assert_eq!(cached, Some("token_abc".to_string()));
+    }
+
+    #[tokio::test]
+    async fn get_token_returns_none_when_not_cached() {
+        let state = test_app_state().await;
+        let cached = state.get_token_from_cache(999).await;
+        assert_eq!(cached, None);
+    }
+
+    #[tokio::test]
+    async fn invalidate_removes_cached_token() {
+        let state = test_app_state().await;
+        state.cache_access_token(2, "token_xyz").await;
+        state.invalidate_access_token(2).await;
+        let cached = state.get_token_from_cache(2).await;
+        assert_eq!(cached, None);
+    }
+
+    #[tokio::test]
+    async fn separate_athletes_have_separate_caches() {
+        let state = test_app_state().await;
+        state.cache_access_token(1, "token_a").await;
+        state.cache_access_token(2, "token_b").await;
+        assert_eq!(state.get_token_from_cache(1).await, Some("token_a".to_string()));
+        assert_eq!(state.get_token_from_cache(2).await, Some("token_b".to_string()));
+    }
+}

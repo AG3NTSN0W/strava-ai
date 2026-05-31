@@ -225,3 +225,38 @@ impl StravaClient {
         Ok(streams)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn invalid_header_error_display() {
+        let err = StravaClientError::InvalidHeader {
+            expected: "Bearer".to_string(),
+            found: "Basic".to_string(),
+        };
+        assert_eq!(err.to_string(), r#"Invalid header (expected "Bearer", got "Basic")"#);
+    }
+
+    #[test]
+    fn missing_attribute_error_display() {
+        let err = StravaClientError::MissingAttribute("access_token".to_string());
+        assert_eq!(err.to_string(), "Missing attribute: access_token");
+    }
+
+    #[test]
+    fn unknown_error_display() {
+        let err = StravaClientError::UnknowError {
+            context: "get_activities".to_string(),
+            status_code: StatusCode::INTERNAL_SERVER_ERROR,
+        };
+        assert_eq!(err.to_string(), "Strava API error get_activities: HTTP status 500 Internal Server Error");
+    }
+
+    #[test]
+    fn unauthorized_error_display() {
+        let err = StravaClientError::UNAUTHORIZED(42);
+        assert_eq!(err.to_string(), "Client 42 is unauthorized");
+    }
+}

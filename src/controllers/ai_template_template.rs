@@ -96,3 +96,36 @@ pub async fn get_template(
 ) -> impl IntoResponse {
     HtmlTemplate(AiResponseTemplate::new(state, body).await)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use askama::Template;
+
+    #[test]
+    fn renders_ai_response() {
+        let template = AiResponseTemplate {
+            athlete_id: 1,
+            activity_id: 123,
+            title: "Legs of Steel".to_string(),
+            description: "A brutal hill session".to_string(),
+        };
+        let html = template.render().unwrap();
+        assert!(html.contains("Legs of Steel"));
+        assert!(html.contains("A brutal hill session"));
+        assert!(html.contains("123"));
+    }
+
+    #[test]
+    fn renders_error_state() {
+        let template = AiResponseTemplate {
+            athlete_id: 0,
+            activity_id: 0,
+            title: "[ERROR]".to_string(),
+            description: "Unable to generate title and a description".to_string(),
+        };
+        let html = template.render().unwrap();
+        assert!(html.contains("[ERROR]"));
+        assert!(html.contains("Unable to generate"));
+    }
+}

@@ -1,5 +1,8 @@
 <script>
     pts = {{ map_points | json | safe }};
+    heartrateStream = {{ heartrate_stream | json | safe }};
+    altitudeStream = {{ altitude_stream | json | safe }};
+    velocityStream = {{ velocity_stream | json | safe }};
     function before_request() {
         let ai_target = document.getElementById("ai-target");
         ai_target.style.display = "None";
@@ -12,12 +15,20 @@
             document.getElementById("save-button").disabled = false
         }, {once: true});
     }
+
+    function onMapLayerChange(select) {
+        initMap(select.value);
+    }
 </script>
 
 
 {% match activity %}
 {% when Some(activity) %}
 <div class="mb-5">
+    <a onclick="navigate_to('activityFeed')" class="inline-flex items-center gap-1 text-secondary hover:text-primary cursor-pointer transition-colors text-body-md mb-4">
+        <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+        Back to Activities
+    </a>
     <div class="flex items-center gap-2 text-primary font-label-md mb-2">
         <span class="material-symbols-outlined text-[18px]">calendar_today</span>
         <span>{{activity.start_date_local}}</span>
@@ -30,6 +41,14 @@
     <!-- Primary Visual: Map -->
     <div class="col-span-12 xl:col-span-8 space-y-gutter">
         <div class="relative h-[95%] rounded-xl overflow-hidden border border-outline-variant group">
+            <div class="absolute top-4 right-4 z-[999]">
+                <select onchange="onMapLayerChange(this)" class="bg-surface border border-outline-variant rounded-lg py-2 px-4 pr-8 text-label-md shadow-sm focus:ring-1 focus:ring-primary focus:border-primary hover:border-primary cursor-pointer transition-colors">
+                    <option value="route" selected>Route</option>
+                    <option value="heartrate">Heart Rate</option>
+                    <option value="altitude">Elevation</option>
+                    <option value="velocity">Speed</option>
+                </select>
+            </div>
             <div id="map" class="w-full h-full object-cover"></div>
             <!-- Stats Overlay -->
             <div class="z-[999] absolute bottom-6 left-6 flex justify-end gap-4 right-4">
@@ -83,7 +102,7 @@
                     <label class="text-label-sm text-secondary uppercase mb-2 block font-bold">System
                         Instruction</label>
                     <textarea id="ai-prompt"
-                            class="w-full bg-surface-container-low border border-outline-variant rounded-lg p-3 text-body-md focus:ring-1 focus:ring-primary focus:border-primary min-h-[100px]">{{prompt}}</textarea>
+                            class="w-full bg-surface-container-low border border-outline-variant rounded-lg p-3 text-body-md focus:ring-1 focus:ring-primary focus:border-primary hover:border-primary transition-colors min-h-[100px]">{{prompt}}</textarea>
                 </div>
                 <!-- Live Preview -->
                 <div id="ai-target" class="hx-hide-on-request bg-surface-container-highest/50 rounded-lg p-5 border-l-4 border-primary">
@@ -139,6 +158,14 @@
 <!-- Spacer for mobile scrolling -->
 <div class="h-16 lg:hidden"></div>
 {% when None %}
+<div class="flex flex-col items-center justify-center h-[60vh] text-center">
+    <span class="material-symbols-outlined text-[64px] text-outline mb-4">error_outline</span>
+    <h2 class="font-display text-headline-md font-bold text-on-surface mb-2">Activity Not Found</h2>
+    <p class="text-body-md text-secondary mb-6">The activity you're looking for doesn't exist or couldn't be loaded.</p>
+    <button onclick="navigate_to('activityFeed')" class="bg-primary text-on-primary px-6 py-3 rounded-lg font-label-md hover:opacity-90 transition-all">
+        Back to Activities
+    </button>
+</div>
 {% endmatch %}
 
 
