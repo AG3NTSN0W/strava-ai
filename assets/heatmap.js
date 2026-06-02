@@ -67,18 +67,22 @@ function initMap(layer) {
     let metricData = [];
     let palette = {};
     let label = "";
+    let legend_colors = "";
 
     if (layer === "heartrate" && typeof heartrateStream !== 'undefined' && heartrateStream.length) {
         metricData = heartrateStream;
         palette = {0.0: '#ffffff', 0.25: '#ffe0e0', 0.5: '#ffb3b3', 0.75: '#ff6666', 1.0: '#cc0000'};
+        legend_colors = "#ffffff, #ffe0e0, #ffb3b3, #ff6666, #cc0000"
         label = "Heart Rate";
     } else if (layer === "altitude" && typeof altitudeStream !== 'undefined' && altitudeStream.length) {
         metricData = altitudeStream;
         palette = {0.0: '#006400', 0.25: '#228B22', 0.5: '#ADFF2F', 0.75: '#FFD700', 1.0: '#8B4513'};
+        legend_colors = "#006400, #228B22, #ADFF2F, #FFD700, #8B4513"
         label = "Elevation";
     } else if (layer === "velocity" && typeof velocityStream !== 'undefined' && velocityStream.length) {
         metricData = velocityStream;
         palette = {0.0: '#0000FF', 0.25: '#00BFFF', 0.5: '#00FF00', 0.75: '#FFA500', 1.0: '#FF0000'};
+        legend_colors = "#0000FF, #00BFFF, #00FF00, #FFA500, #FF0000"
         label = "Speed";
     } else {
         // Fallback to plain route if no data
@@ -109,4 +113,13 @@ function initMap(layer) {
     }).addTo(map);
 
     map.fitBounds(line.getBounds());
+
+    const legend = L.control({position: 'bottomleft'});
+    legend.onAdd = function () {
+        const d = L.DomUtil.create('div');
+        d.className = 'bg-surface backdrop-blur-md p-4 rounded-lg border border-outline-variant shadow-sm';
+        d.innerHTML = `<div style="margin-bottom:4px"><b>${label}</b></div><div style="display:flex;align-items:center;gap:6px"><span>Low</span><div style="width:120px;height:14px;border-radius:3px;background:linear-gradient(to right,${legend_colors})"></div><span>High</span></div>`;
+        return d;
+    };
+    legend.addTo(map);
 }
