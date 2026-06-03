@@ -1,5 +1,4 @@
 function initHeatmap() {
-    console.log("heatmap initialized");
     if (map) map.remove();
 
     map = L.map('map');
@@ -36,7 +35,6 @@ function initHeatmap() {
 }
 
 function initMap(layer) {
-    console.log("Map initialized, layer:", layer || "route");
     if (map) map.remove();
 
     map = L.map('map', {
@@ -85,7 +83,6 @@ function initMap(layer) {
         legend_colors = "#0000FF, #00BFFF, #00FF00, #FFA500, #FF0000"
         label = "Speed";
     } else {
-        // Fallback to plain route if no data
         var pointLine = L.polyline(pts, {
             color: '#FC4C02',
             weight: 3,
@@ -96,7 +93,6 @@ function initMap(layer) {
         return;
     }
 
-    // Build hotline data: [[lat, lng, metric], ...]
     const len = Math.min(pts.length, metricData.length);
     const hotlineData = [];
     for (let i = 0; i < len; i++) {

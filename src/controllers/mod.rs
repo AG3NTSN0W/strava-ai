@@ -81,8 +81,8 @@ pub fn routes(app_state: Arc<AppState>) -> Router {
             post(callback_controller::update_auto_update),
         )
         .route(
-            "/backfill/streams",
-            get(callback_controller::backfill_streams),
+            "/sync",
+            get(callback_controller::sync_map_data),
         )
         .route("/heat/map", get(heatmap_template::get_template))
         .route("/settings", get(settings_template::get_template))

@@ -52,11 +52,9 @@ pub struct UpdatePromptRequest {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct BackfillStreamsQuery {
+pub struct SyncQuery {
     pub athlete_id: i64,
 }
-
-// --- Handlers ---
 
 pub async fn exchange_token(
     Query(params): Query<ExchangeTokenQuery>,
@@ -255,8 +253,8 @@ pub async fn update_prompt(
     }
 }
 
-pub async fn backfill_streams(
-    Query(params): Query<BackfillStreamsQuery>,
+pub async fn sync_map_data(
+    Query(params): Query<SyncQuery>,
     State(app_state): State<Arc<AppState>>,
 ) -> impl IntoResponse {
     let athlete = match AthleteRepository::get_by_id(&app_state.db_pools, params.athlete_id).await {
@@ -270,7 +268,7 @@ pub async fn backfill_streams(
     };
 
     let activities =
-        ActivityRepository::get_past_month_by_athlete_id(&app_state.db_pools, params.athlete_id)
+        ActivityRepository::get_by_athlete_id(&app_state.db_pools, params.athlete_id)
             .await
             .unwrap_or_default();
 
@@ -305,7 +303,6 @@ async fn get_token(app_state: &Arc<AppState>, athlete: &Athlete) -> Result<Strin
     };
     Ok(access_token)
 }
-// --- Helpers ---
 
 async fn upsert_athlete(pool: &Pool<Sqlite>, athlete: &Athlete) -> Result<()> {
     if AthleteRepository::exists(pool, athlete.id).await? {

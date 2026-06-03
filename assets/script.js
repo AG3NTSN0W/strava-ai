@@ -234,6 +234,14 @@ const toggle_auto_update = () => {
     });
 }
 
+const map_sync = () => {
+    htmx.ajax('GET', '/sync', {
+        values: {
+            athlete_id: athlete.id,
+        },
+    });
+}
+
 
 window.onload = () => {
     navigate_to("activityFeed");
